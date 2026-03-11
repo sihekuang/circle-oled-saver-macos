@@ -1,8 +1,9 @@
 # Xcode
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
-DerivedData/
+*.xcodeproj/project.xcworkspace/xcuserdata/
 *.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+DerivedData/
 build/
 
 # Swift Package Manager
@@ -11,3 +12,6 @@ build/
 
 # macOS
 .DS_Store
+
+# Claude Code
+.claude/
