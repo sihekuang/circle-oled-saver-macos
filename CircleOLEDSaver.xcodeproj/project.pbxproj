@@ -1,0 +1,414 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2129815454CC41DEDE65EA0B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7F0E3C4237A5B8927234783 /* AppDelegate.swift */; };
+		29B5EF5211615DA09DF573D1 /* CircleKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5FFC558C566188C109FA6096 /* CircleKit */; };
+		BA88B2CBE9BB8B17C48ECF3F /* CircleKit in Frameworks */ = {isa = PBXBuildFile; productRef = 43807AB23D6846E5D226D64D /* CircleKit */; };
+		DC13A3BEF7AB9020CC97AB07 /* CircleSaverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA0D2BD7DA581F51F431D6E /* CircleSaverView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0E9043555548A01B55E18F83 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		229471C9116CB6AF3C79C58D /* CircleApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CircleApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5405950EB45A095161D50869 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		58A019C3848E903D1743D72F /* CircleApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CircleApp.entitlements; sourceTree = "<group>"; };
+		7A04D25E178622374F996859 /* CircleKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CircleKit; path = CircleKit; sourceTree = SOURCE_ROOT; };
+		AF2C454A66C173A734257128 /* CircleSaver.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CircleSaver.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		DDA0D2BD7DA581F51F431D6E /* CircleSaverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleSaverView.swift; sourceTree = "<group>"; };
+		F7F0E3C4237A5B8927234783 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		7BA85986694D7F9200587298 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				29B5EF5211615DA09DF573D1 /* CircleKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EA20CFC7B317C385CEF58BDC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BA88B2CBE9BB8B17C48ECF3F /* CircleKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0A577006CFD4DBE8497FB780 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				229471C9116CB6AF3C79C58D /* CircleApp.app */,
+				AF2C454A66C173A734257128 /* CircleSaver.bundle */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5749A42295EEF877F77F4605 /* CircleSaver */ = {
+			isa = PBXGroup;
+			children = (
+				DDA0D2BD7DA581F51F431D6E /* CircleSaverView.swift */,
+				0E9043555548A01B55E18F83 /* Info.plist */,
+			);
+			path = CircleSaver;
+			sourceTree = "<group>";
+		};
+		A14E8D1C4ED362FE91C9B480 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				7A04D25E178622374F996859 /* CircleKit */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		B2C4379B034F780FEA112FFA = {
+			isa = PBXGroup;
+			children = (
+				C3C28D8D31F8B7D7B7C29755 /* CircleApp */,
+				5749A42295EEF877F77F4605 /* CircleSaver */,
+				A14E8D1C4ED362FE91C9B480 /* Packages */,
+				0A577006CFD4DBE8497FB780 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C3C28D8D31F8B7D7B7C29755 /* CircleApp */ = {
+			isa = PBXGroup;
+			children = (
+				F7F0E3C4237A5B8927234783 /* AppDelegate.swift */,
+				58A019C3848E903D1743D72F /* CircleApp.entitlements */,
+				5405950EB45A095161D50869 /* Info.plist */,
+			);
+			path = CircleApp;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0AB9490CE2C1EF27A6E390B4 /* CircleSaver */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9E12B5A54AD2AF045AEF41A6 /* Build configuration list for PBXNativeTarget "CircleSaver" */;
+			buildPhases = (
+				16FCBBA1D90AB4771A87D63B /* Sources */,
+				7BA85986694D7F9200587298 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CircleSaver;
+			packageProductDependencies = (
+				5FFC558C566188C109FA6096 /* CircleKit */,
+			);
+			productName = CircleSaver;
+			productReference = AF2C454A66C173A734257128 /* CircleSaver.bundle */;
+			productType = "com.apple.product-type.bundle";
+		};
+		BB2EA0B9B880EED1B2DDC1B9 /* CircleApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 57722E62A8E2364B606D27BC /* Build configuration list for PBXNativeTarget "CircleApp" */;
+			buildPhases = (
+				A2E68992C9A1FD998C2837C7 /* Sources */,
+				EA20CFC7B317C385CEF58BDC /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CircleApp;
+			packageProductDependencies = (
+				43807AB23D6846E5D226D64D /* CircleKit */,
+			);
+			productName = CircleApp;
+			productReference = 229471C9116CB6AF3C79C58D /* CircleApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		094D1C413EC8FFE7880D5CA4 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = F938768E5827A79A0F45494E /* Build configuration list for PBXProject "CircleOLEDSaver" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = B2C4379B034F780FEA112FFA;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				092CF6751C752D2915CEF894 /* XCLocalSwiftPackageReference "CircleKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0A577006CFD4DBE8497FB780 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BB2EA0B9B880EED1B2DDC1B9 /* CircleApp */,
+				0AB9490CE2C1EF27A6E390B4 /* CircleSaver */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		16FCBBA1D90AB4771A87D63B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DC13A3BEF7AB9020CC97AB07 /* CircleSaverView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A2E68992C9A1FD998C2837C7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2129815454CC41DEDE65EA0B /* AppDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		645C0AC3B3210AF003B60F35 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = CircleApp/CircleApp.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = CircleApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.danielkurin.circle;
+				PRODUCT_NAME = Circle;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		7EC4D4C75E6100062EA60159 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = CircleSaver/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.danielkurin.circle.saver;
+				PRODUCT_NAME = Circle;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = saver;
+			};
+			name = Debug;
+		};
+		A72615739DE44552D724160A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		B9A79A6E80A56D6D5B865BEC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = CircleSaver/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.danielkurin.circle.saver;
+				PRODUCT_NAME = Circle;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				WRAPPER_EXTENSION = saver;
+			};
+			name = Release;
+		};
+		CEF5E83B30152BFCB240163E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = CircleApp/CircleApp.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = CircleApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.danielkurin.circle;
+				PRODUCT_NAME = Circle;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		DE0F853F2702FA2B3913D062 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		57722E62A8E2364B606D27BC /* Build configuration list for PBXNativeTarget "CircleApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CEF5E83B30152BFCB240163E /* Debug */,
+				645C0AC3B3210AF003B60F35 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9E12B5A54AD2AF045AEF41A6 /* Build configuration list for PBXNativeTarget "CircleSaver" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7EC4D4C75E6100062EA60159 /* Debug */,
+				B9A79A6E80A56D6D5B865BEC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F938768E5827A79A0F45494E /* Build configuration list for PBXProject "CircleOLEDSaver" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DE0F853F2702FA2B3913D062 /* Debug */,
+				A72615739DE44552D724160A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		092CF6751C752D2915CEF894 /* XCLocalSwiftPackageReference "CircleKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = CircleKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		43807AB23D6846E5D226D64D /* CircleKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CircleKit;
+		};
+		5FFC558C566188C109FA6096 /* CircleKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CircleKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 094D1C413EC8FFE7880D5CA4 /* Project object */;
+}
