@@ -7,39 +7,41 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1A2B3C4D5E6F708192A3B4C5 /* CircleOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* CircleOverlayView.swift */; };
+		1F9668EB6A575803E482BBD6 /* ContentSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA8F4249CF58700659E2E1CD /* ContentSettingsView.swift */; };
 		2129815454CC41DEDE65EA0B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7F0E3C4237A5B8927234783 /* AppDelegate.swift */; };
-		A1B2C3D4E5F6A7B8C9D0E1F2 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6A7B8C9D0E1F2A3B4C5 /* HotkeyManager.swift */; };
+		292473F817BB11AE3BFA75D1 /* CircleOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA85BC3E5CFE70C50E68021B /* CircleOverlayView.swift */; };
 		29B5EF5211615DA09DF573D1 /* CircleKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5FFC558C566188C109FA6096 /* CircleKit */; };
+		2E6F56E3F18EB8A163EEAA89 /* OverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2EFAE53D00E0BDA2A16B644 /* OverlayWindowController.swift */; };
+		515B7802A41B623573A5E626 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B630F8FB50438C3C153E0AC7 /* GeneralSettingsView.swift */; };
+		7B61B869FC579A98BE5F0A11 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CAE65D8524A6C49B8828BD /* SettingsWindowController.swift */; };
+		AA229DB09BFADA87F2247783 /* TrayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F676639A0CFB1EAB17577F9B /* TrayManager.swift */; };
 		BA88B2CBE9BB8B17C48ECF3F /* CircleKit in Frameworks */ = {isa = PBXBuildFile; productRef = 43807AB23D6846E5D226D64D /* CircleKit */; };
-		D6E7F8091A2B3C4D5E6F7081 /* OverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6071829A3B4C5D6 /* OverlayWindowController.swift */; };
+		C0E7BE60DCF20A7790ABD59D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42D0183F6E06025B159237C7 /* SettingsView.swift */; };
 		DC13A3BEF7AB9020CC97AB07 /* CircleSaverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA0D2BD7DA581F51F431D6E /* CircleSaverView.swift */; };
-		E1F2A3B4C5D6E7F809AABB01 /* TrayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6E7F809AABB02 /* TrayManager.swift */; };
-		E1F2A3B4C5D6E7F809AABB03 /* IdleMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6E7F809AABB04 /* IdleMonitor.swift */; };
-		E1F2A3B4C5D6E7F809AABB05 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6E7F809AABB06 /* SettingsWindowController.swift */; };
-		E1F2A3B4C5D6E7F809AABB21 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6E7F809AABB22 /* SettingsView.swift */; };
-		E1F2A3B4C5D6E7F809AABB23 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6E7F809AABB24 /* GeneralSettingsView.swift */; };
-		E1F2A3B4C5D6E7F809AABB25 /* ContentSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6E7F809AABB26 /* ContentSettingsView.swift */; };
+		E97C23A79BA96A755CE2285E /* IdleMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE1C19FB7F3EBFBE2CFA8176 /* IdleMonitor.swift */; };
+		EE1E893B9044569FC8385215 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B28A47E975AC8886020191AD /* Assets.xcassets */; };
+		F82F2FE1625333D6B4555B54 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776C67B3C2712EACED4B341A /* HotkeyManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0E9043555548A01B55E18F83 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		229471C9116CB6AF3C79C58D /* CircleApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CircleApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		42D0183F6E06025B159237C7 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5405950EB45A095161D50869 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		58A019C3848E903D1743D72F /* CircleApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CircleApp.entitlements; sourceTree = "<group>"; };
+		776C67B3C2712EACED4B341A /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
 		7A04D25E178622374F996859 /* CircleKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CircleKit; path = CircleKit; sourceTree = SOURCE_ROOT; };
+		A2CAE65D8524A6C49B8828BD /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
+		AE1C19FB7F3EBFBE2CFA8176 /* IdleMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdleMonitor.swift; sourceTree = "<group>"; };
 		AF2C454A66C173A734257128 /* CircleSaver.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CircleSaver.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
+		B28A47E975AC8886020191AD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B630F8FB50438C3C153E0AC7 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		DDA0D2BD7DA581F51F431D6E /* CircleSaverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleSaverView.swift; sourceTree = "<group>"; };
-		D4E5F6A7B8C9D0E1F2A3B4C5 /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F60718293A4B5C /* CircleOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleOverlayView.swift; sourceTree = "<group>"; };
-		B2C3D4E5F6071829A3B4C5D6 /* OverlayWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowController.swift; sourceTree = "<group>"; };
+		E2EFAE53D00E0BDA2A16B644 /* OverlayWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowController.swift; sourceTree = "<group>"; };
+		EA85BC3E5CFE70C50E68021B /* CircleOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleOverlayView.swift; sourceTree = "<group>"; };
+		F676639A0CFB1EAB17577F9B /* TrayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrayManager.swift; sourceTree = "<group>"; };
 		F7F0E3C4237A5B8927234783 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		E1F2A3B4C5D6E7F809AABB02 /* TrayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrayManager.swift; sourceTree = "<group>"; };
-		E1F2A3B4C5D6E7F809AABB04 /* IdleMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdleMonitor.swift; sourceTree = "<group>"; };
-		E1F2A3B4C5D6E7F809AABB06 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
-		E1F2A3B4C5D6E7F809AABB22 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		E1F2A3B4C5D6E7F809AABB24 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
-		E1F2A3B4C5D6E7F809AABB26 /* ContentSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentSettingsView.swift; sourceTree = "<group>"; };
+		FA8F4249CF58700659E2E1CD /* ContentSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentSettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -80,6 +82,25 @@
 			path = CircleSaver;
 			sourceTree = "<group>";
 		};
+		84379D7516A5B54DFDCFF3A5 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				FA8F4249CF58700659E2E1CD /* ContentSettingsView.swift */,
+				B630F8FB50438C3C153E0AC7 /* GeneralSettingsView.swift */,
+				42D0183F6E06025B159237C7 /* SettingsView.swift */,
+				A2CAE65D8524A6C49B8828BD /* SettingsWindowController.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		9E2061366C0414FBDA0333C1 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				B28A47E975AC8886020191AD /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		A14E8D1C4ED362FE91C9B480 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
@@ -101,28 +122,18 @@
 		C3C28D8D31F8B7D7B7C29755 /* CircleApp */ = {
 			isa = PBXGroup;
 			children = (
+				9E2061366C0414FBDA0333C1 /* Resources */,
+				84379D7516A5B54DFDCFF3A5 /* Settings */,
 				F7F0E3C4237A5B8927234783 /* AppDelegate.swift */,
-				E1F2A3B4C5D6E7F809AABB02 /* TrayManager.swift */,
-				A1B2C3D4E5F60718293A4B5C /* CircleOverlayView.swift */,
-				D4E5F6A7B8C9D0E1F2A3B4C5 /* HotkeyManager.swift */,
-				E1F2A3B4C5D6E7F809AABB04 /* IdleMonitor.swift */,
-				B2C3D4E5F6071829A3B4C5D6 /* OverlayWindowController.swift */,
-				E1F2A3B4C5D6E7F809AABB10 /* Settings */,
 				58A019C3848E903D1743D72F /* CircleApp.entitlements */,
+				EA85BC3E5CFE70C50E68021B /* CircleOverlayView.swift */,
+				776C67B3C2712EACED4B341A /* HotkeyManager.swift */,
+				AE1C19FB7F3EBFBE2CFA8176 /* IdleMonitor.swift */,
 				5405950EB45A095161D50869 /* Info.plist */,
+				E2EFAE53D00E0BDA2A16B644 /* OverlayWindowController.swift */,
+				F676639A0CFB1EAB17577F9B /* TrayManager.swift */,
 			);
 			path = CircleApp;
-			sourceTree = "<group>";
-		};
-		E1F2A3B4C5D6E7F809AABB10 /* Settings */ = {
-			isa = PBXGroup;
-			children = (
-				E1F2A3B4C5D6E7F809AABB06 /* SettingsWindowController.swift */,
-				E1F2A3B4C5D6E7F809AABB22 /* SettingsView.swift */,
-				E1F2A3B4C5D6E7F809AABB24 /* GeneralSettingsView.swift */,
-				E1F2A3B4C5D6E7F809AABB26 /* ContentSettingsView.swift */,
-			);
-			path = Settings;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -152,6 +163,7 @@
 			buildConfigurationList = 57722E62A8E2364B606D27BC /* Build configuration list for PBXNativeTarget "CircleApp" */;
 			buildPhases = (
 				A2E68992C9A1FD998C2837C7 /* Sources */,
+				F34E28AF76EB51EE0AC6E682 /* Resources */,
 				EA20CFC7B317C385CEF58BDC /* Frameworks */,
 			);
 			buildRules = (
@@ -200,6 +212,17 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		F34E28AF76EB51EE0AC6E682 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EE1E893B9044569FC8385215 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		16FCBBA1D90AB4771A87D63B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -213,16 +236,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1A2B3C4D5E6F708192A3B4C5 /* CircleOverlayView.swift in Sources */,
 				2129815454CC41DEDE65EA0B /* AppDelegate.swift in Sources */,
-				A1B2C3D4E5F6A7B8C9D0E1F2 /* HotkeyManager.swift in Sources */,
-				D6E7F8091A2B3C4D5E6F7081 /* OverlayWindowController.swift in Sources */,
-				E1F2A3B4C5D6E7F809AABB01 /* TrayManager.swift in Sources */,
-				E1F2A3B4C5D6E7F809AABB03 /* IdleMonitor.swift in Sources */,
-				E1F2A3B4C5D6E7F809AABB05 /* SettingsWindowController.swift in Sources */,
-				E1F2A3B4C5D6E7F809AABB21 /* SettingsView.swift in Sources */,
-				E1F2A3B4C5D6E7F809AABB23 /* GeneralSettingsView.swift in Sources */,
-				E1F2A3B4C5D6E7F809AABB25 /* ContentSettingsView.swift in Sources */,
+				292473F817BB11AE3BFA75D1 /* CircleOverlayView.swift in Sources */,
+				1F9668EB6A575803E482BBD6 /* ContentSettingsView.swift in Sources */,
+				515B7802A41B623573A5E626 /* GeneralSettingsView.swift in Sources */,
+				F82F2FE1625333D6B4555B54 /* HotkeyManager.swift in Sources */,
+				E97C23A79BA96A755CE2285E /* IdleMonitor.swift in Sources */,
+				2E6F56E3F18EB8A163EEAA89 /* OverlayWindowController.swift in Sources */,
+				C0E7BE60DCF20A7790ABD59D /* SettingsView.swift in Sources */,
+				7B61B869FC579A98BE5F0A11 /* SettingsWindowController.swift in Sources */,
+				AA229DB09BFADA87F2247783 /* TrayManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
