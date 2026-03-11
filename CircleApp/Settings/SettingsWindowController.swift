@@ -4,6 +4,9 @@ import CircleKit
 
 final class SettingsWindowController: NSWindowController {
     convenience init() {
+        let settingsView = SettingsView()
+        let hostingController = NSHostingController(rootView: settingsView)
+
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 500, height: 450),
             styleMask: [.titled, .closable, .miniaturizable],
@@ -11,6 +14,7 @@ final class SettingsWindowController: NSWindowController {
             defer: false
         )
         window.title = "Circle Settings"
+        window.contentViewController = hostingController
         window.center()
         window.isReleasedWhenClosed = false
 

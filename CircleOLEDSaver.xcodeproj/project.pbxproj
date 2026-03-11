@@ -17,6 +17,9 @@
 		E1F2A3B4C5D6E7F809AABB01 /* TrayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6E7F809AABB02 /* TrayManager.swift */; };
 		E1F2A3B4C5D6E7F809AABB03 /* IdleMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6E7F809AABB04 /* IdleMonitor.swift */; };
 		E1F2A3B4C5D6E7F809AABB05 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6E7F809AABB06 /* SettingsWindowController.swift */; };
+		E1F2A3B4C5D6E7F809AABB21 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6E7F809AABB22 /* SettingsView.swift */; };
+		E1F2A3B4C5D6E7F809AABB23 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6E7F809AABB24 /* GeneralSettingsView.swift */; };
+		E1F2A3B4C5D6E7F809AABB25 /* ContentSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D6E7F809AABB26 /* ContentSettingsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -34,6 +37,9 @@
 		E1F2A3B4C5D6E7F809AABB02 /* TrayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrayManager.swift; sourceTree = "<group>"; };
 		E1F2A3B4C5D6E7F809AABB04 /* IdleMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdleMonitor.swift; sourceTree = "<group>"; };
 		E1F2A3B4C5D6E7F809AABB06 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
+		E1F2A3B4C5D6E7F809AABB22 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		E1F2A3B4C5D6E7F809AABB24 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
+		E1F2A3B4C5D6E7F809AABB26 /* ContentSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentSettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -112,6 +118,9 @@
 			isa = PBXGroup;
 			children = (
 				E1F2A3B4C5D6E7F809AABB06 /* SettingsWindowController.swift */,
+				E1F2A3B4C5D6E7F809AABB22 /* SettingsView.swift */,
+				E1F2A3B4C5D6E7F809AABB24 /* GeneralSettingsView.swift */,
+				E1F2A3B4C5D6E7F809AABB26 /* ContentSettingsView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -211,6 +220,9 @@
 				E1F2A3B4C5D6E7F809AABB01 /* TrayManager.swift in Sources */,
 				E1F2A3B4C5D6E7F809AABB03 /* IdleMonitor.swift in Sources */,
 				E1F2A3B4C5D6E7F809AABB05 /* SettingsWindowController.swift in Sources */,
+				E1F2A3B4C5D6E7F809AABB21 /* SettingsView.swift in Sources */,
+				E1F2A3B4C5D6E7F809AABB23 /* GeneralSettingsView.swift in Sources */,
+				E1F2A3B4C5D6E7F809AABB25 /* ContentSettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
