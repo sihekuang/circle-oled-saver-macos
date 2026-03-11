@@ -7,9 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1A2B3C4D5E6F708192A3B4C5 /* CircleOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* CircleOverlayView.swift */; };
 		2129815454CC41DEDE65EA0B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7F0E3C4237A5B8927234783 /* AppDelegate.swift */; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F6A7B8C9D0E1F2A3B4C5 /* HotkeyManager.swift */; };
 		29B5EF5211615DA09DF573D1 /* CircleKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5FFC558C566188C109FA6096 /* CircleKit */; };
 		BA88B2CBE9BB8B17C48ECF3F /* CircleKit in Frameworks */ = {isa = PBXBuildFile; productRef = 43807AB23D6846E5D226D64D /* CircleKit */; };
+		D6E7F8091A2B3C4D5E6F7081 /* OverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6071829A3B4C5D6 /* OverlayWindowController.swift */; };
 		DC13A3BEF7AB9020CC97AB07 /* CircleSaverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA0D2BD7DA581F51F431D6E /* CircleSaverView.swift */; };
 /* End PBXBuildFile section */
 
@@ -21,6 +24,9 @@
 		7A04D25E178622374F996859 /* CircleKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CircleKit; path = CircleKit; sourceTree = SOURCE_ROOT; };
 		AF2C454A66C173A734257128 /* CircleSaver.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CircleSaver.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		DDA0D2BD7DA581F51F431D6E /* CircleSaverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleSaverView.swift; sourceTree = "<group>"; };
+		D4E5F6A7B8C9D0E1F2A3B4C5 /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* CircleOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleOverlayView.swift; sourceTree = "<group>"; };
+		B2C3D4E5F6071829A3B4C5D6 /* OverlayWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowController.swift; sourceTree = "<group>"; };
 		F7F0E3C4237A5B8927234783 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -84,6 +90,7 @@
 			isa = PBXGroup;
 			children = (
 				F7F0E3C4237A5B8927234783 /* AppDelegate.swift */,
+				D4E5F6A7B8C9D0E1F2A3B4C5 /* HotkeyManager.swift */,
 				58A019C3848E903D1743D72F /* CircleApp.entitlements */,
 				5405950EB45A095161D50869 /* Info.plist */,
 			);
@@ -179,6 +186,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2129815454CC41DEDE65EA0B /* AppDelegate.swift in Sources */,
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* HotkeyManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
