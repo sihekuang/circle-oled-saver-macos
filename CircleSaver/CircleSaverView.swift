@@ -1,23 +1,40 @@
 import ScreenSaver
+import CircleKit
 
-class CircleSaverView: ScreenSaverView {
+final class CircleSaverView: ScreenSaverView {
+    private var renderer: CircleRenderer?
+
     override init?(frame: NSRect, isPreview: Bool) {
         super.init(frame: frame, isPreview: isPreview)
+        wantsLayer = true
         animationTimeInterval = 1.0 / 60.0
     }
 
-    @available(*, unavailable)
     required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        super.init(coder: coder)
+        wantsLayer = true
+        animationTimeInterval = 1.0 / 60.0
     }
 
-    override func draw(_ rect: NSRect) {
-        guard let context = NSGraphicsContext.current?.cgContext else { return }
-        context.setFillColor(NSColor.black.cgColor)
-        context.fill(bounds)
+    override func startAnimation() {
+        super.startAnimation()
+
+        guard let layer else { return }
+        layer.backgroundColor = NSColor.black.cgColor
+
+        renderer = CircleRenderer(
+            hostLayer: layer,
+            bounds: CGSize(width: bounds.width, height: bounds.height)
+        )
+        renderer?.start()
     }
 
-    override func animateOneFrame() {
-        setNeedsDisplay(bounds)
+    override func stopAnimation() {
+        renderer?.stop()
+        renderer = nil
+        super.stopAnimation()
     }
+
+    override var hasConfigureSheet: Bool { false }
+    override var configureSheet: NSWindow? { nil }
 }
