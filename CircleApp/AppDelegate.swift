@@ -2,7 +2,6 @@ import AppKit
 import ServiceManagement
 import CircleKit
 
-@main
 class AppDelegate: NSObject, NSApplicationDelegate {
     private var trayManager: TrayManager!
     private var overlayController: OverlayWindowController?
@@ -11,6 +10,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings = SettingsManager.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        print("[Circle] applicationDidFinishLaunching called")
+        print("[Circle] Bundle ID: \(Bundle.main.bundleIdentifier ?? "nil")")
+
         // Prevent multiple instances
         let runningApps = NSWorkspace.shared.runningApplications
         let isAlreadyRunning = runningApps.filter {
@@ -18,10 +20,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }.count > 0
 
         if isAlreadyRunning {
+            print("[Circle] Another instance detected, quitting")
             NSApp.terminate(nil)
             return
         }
 
+        print("[Circle] Setting up tray...")
         // Setup tray
         trayManager = TrayManager(
             onSettingsClick: { [weak self] in self?.showSettings() },

@@ -121,24 +121,24 @@ public final class MinimalTheme: Theme {
         glowLayer.shadowOpacity = Float(opacity * 0.3)
         glowLayer.shadowRadius = size * 0.3
 
-        // Layout text layers relative to circle bounds
-        let iconSize = size * 0.25
-        let textSize = size * 0.15
+        // Layout text layers relative to circle bounds (CA coordinates: origin bottom-left)
+        let iconSize = size * 0.22
+        let textSize = size * 0.14
 
         iconLayer.fontSize = iconSize
         iconLayer.frame = CGRect(
             x: 0,
-            y: size * 0.4,  // Upper portion (CA coordinates: origin bottom-left)
+            y: size * 1.05,
             width: size * 2,
-            height: iconSize * 1.4
+            height: iconSize * 1.5
         )
 
         textLayer.fontSize = textSize
         textLayer.frame = CGRect(
             x: 0,
-            y: size * 0.05,
+            y: size * 0.35,
             width: size * 2,
-            height: size * 0.9
+            height: size * 0.7
         )
 
         CATransaction.commit()
@@ -155,7 +155,7 @@ public final class MinimalTheme: Theme {
             let attributed = NSMutableAttributedString(string: content.text)
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.alignment = .center
-            paragraphStyle.lineSpacing = 2
+            paragraphStyle.lineSpacing = textLayer.fontSize * 0.5
             attributed.addAttributes([
                 .foregroundColor: NSColor.white,
                 .font: NSFont.boldSystemFont(ofSize: textLayer.fontSize),

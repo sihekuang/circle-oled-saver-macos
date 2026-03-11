@@ -167,23 +167,23 @@ public final class SoftTheme: Theme {
         // Text positioning (relative to blob layer)
         let localCenterX = position.x - blobBounds.origin.x
         let localCenterY = position.y - blobBounds.origin.y
-        let iconSize = size * 0.25
-        let textSize = size * 0.15
+        let iconSize = size * 0.22
+        let textSize = size * 0.14
 
         iconLayer.fontSize = iconSize
         iconLayer.frame = CGRect(
             x: localCenterX - size,
-            y: localCenterY - size * 0.1,
+            y: localCenterY + size * 0.1,
             width: size * 2,
-            height: iconSize * 1.4
+            height: iconSize * 1.5
         )
 
         textLayer.fontSize = textSize
         textLayer.frame = CGRect(
             x: localCenterX - size,
-            y: localCenterY - size * 0.6,
+            y: localCenterY - size * 0.55,
             width: size * 2,
-            height: size * 0.9
+            height: size * 0.7
         )
 
         CATransaction.commit()
@@ -200,7 +200,7 @@ public final class SoftTheme: Theme {
             let attributed = NSMutableAttributedString(string: content.text)
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.alignment = .center
-            paragraphStyle.lineSpacing = 2
+            paragraphStyle.lineSpacing = textLayer.fontSize * 0.5
             attributed.addAttributes([
                 .foregroundColor: NSColor.white,
                 .font: NSFont.boldSystemFont(ofSize: textLayer.fontSize),
