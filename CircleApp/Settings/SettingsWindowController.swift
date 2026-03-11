@@ -1,0 +1,19 @@
+import AppKit
+import SwiftUI
+import CircleKit
+
+final class SettingsWindowController: NSWindowController {
+    convenience init() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 450),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Circle Settings"
+        window.center()
+        window.isReleasedWhenClosed = false
+
+        self.init(window: window)
+    }
+}
