@@ -9,9 +9,14 @@ final class IdleMonitor {
     private var timer: Timer?
     private var isScreensaverActive = false
     private let pollInterval: TimeInterval = 1.0
+    private var activity: NSObjectProtocol?
 
     func start() {
         guard timer == nil else { return }
+        activity = ProcessInfo.processInfo.beginActivity(
+            options: .userInitiatedAllowingIdleSystemSleep,
+            reason: "Monitoring user idle state"
+        )
         timer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
             self?.checkIdleState()
         }
@@ -20,6 +25,10 @@ final class IdleMonitor {
     func stop() {
         timer?.invalidate()
         timer = nil
+        if let activity {
+            ProcessInfo.processInfo.endActivity(activity)
+        }
+        activity = nil
     }
 
     private func checkIdleState() {

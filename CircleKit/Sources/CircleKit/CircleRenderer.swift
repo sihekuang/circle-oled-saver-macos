@@ -9,7 +9,7 @@ public final class CircleRenderer {
     private var displayLink: CVDisplayLink?
     private var lastFrameTime: CFTimeInterval = 0
     private let hostLayer: CALayer
-    private let bounds: CGSize
+    private var bounds: CGSize { hostLayer.bounds.size }
     private let settings: SettingsManager
 
     // Proximity fade state (set from outside)
@@ -17,7 +17,6 @@ public final class CircleRenderer {
 
     public init(hostLayer: CALayer, bounds: CGSize) {
         self.hostLayer = hostLayer
-        self.bounds = bounds
         self.settings = SettingsManager.shared
 
         // Initialize ball
