@@ -141,6 +141,9 @@ public final class MinimalTheme: Theme {
             height: size * 0.7
         )
 
+        iconLayer.opacity = Float(opacity)
+        textLayer.opacity = Float(opacity)
+
         CATransaction.commit()
     }
 
