@@ -25,6 +25,7 @@ final class OverlayWindowController {
             window.ignoresMouseEvents = true
             window.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]
             window.hasShadow = false
+            window.isReleasedWhenClosed = false
 
             let overlayView = CircleOverlayView(frame: NSRect(origin: .zero, size: screen.frame.size))
             window.contentView = overlayView

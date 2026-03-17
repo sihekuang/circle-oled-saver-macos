@@ -7,6 +7,7 @@ public final class CircleRenderer {
     private var theme: Theme
     private var contentRotator: ContentRotator?
     private var displayLink: CVDisplayLink?
+    private var isRunning = false
     private var lastFrameTime: CFTimeInterval = 0
     private let hostLayer: CALayer
     private var bounds: CGSize { hostLayer.bounds.size }
@@ -73,36 +74,45 @@ public final class CircleRenderer {
     // MARK: - Animation
 
     public func start() {
+        guard !isRunning else { return }
+        isRunning = true
         lastFrameTime = CACurrentMediaTime()
 
         var displayLink: CVDisplayLink?
         CVDisplayLinkCreateWithActiveCGDisplays(&displayLink)
-        guard let displayLink else { return }
+        guard let displayLink else { isRunning = false; return }
 
         let callback: CVDisplayLinkOutputCallback = { _, _, _, _, _, userInfo -> CVReturn in
             let renderer = Unmanaged<CircleRenderer>.fromOpaque(userInfo!).takeUnretainedValue()
-            DispatchQueue.main.async {
-                renderer.frame()
+            DispatchQueue.main.async { [weak renderer] in
+                renderer?.frame()
             }
             return kCVReturnSuccess
         }
 
-        let pointer = Unmanaged.passUnretained(self).toOpaque()
+        // passRetained keeps self alive as long as the display link context exists,
+        // preventing use-after-free in the callback
+        let pointer = Unmanaged.passRetained(self).toOpaque()
         CVDisplayLinkSetOutputCallback(displayLink, callback, pointer)
         CVDisplayLinkStart(displayLink)
         self.displayLink = displayLink
     }
 
     public func stop() {
+        guard isRunning else { return }
+        isRunning = false
         if let displayLink {
             CVDisplayLinkStop(displayLink)
+            self.displayLink = nil
+            // Balance the passRetained from start()
+            Unmanaged.passUnretained(self).release()
         }
-        displayLink = nil
         contentRotator?.stop()
         theme.teardown()
     }
 
     private func frame() {
+        guard isRunning else { return }
         let now = CACurrentMediaTime()
         let deltaTime = now - lastFrameTime
         lastFrameTime = now
