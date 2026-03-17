@@ -27,12 +27,16 @@ struct GeneralSettingsView: View {
 
                 // Ball
                 SettingsSection("Ball") {
-                    Picker("Size Mode", selection: $settings.ballSizeMode) {
-                        Text("Percentage").tag(BallSizeMode.percentage)
-                        Text("Pixels").tag(BallSizeMode.pixels)
+                    HStack(spacing: 12) {
+                        Text("Size Mode")
+                            .frame(width: 90, alignment: .leading)
+                        Picker("", selection: $settings.ballSizeMode) {
+                            Text("Percentage").tag(BallSizeMode.percentage)
+                            Text("Pixels").tag(BallSizeMode.pixels)
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(maxWidth: 200)
                     }
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 200)
 
                     LabeledSlider(
                         label: "Size",
