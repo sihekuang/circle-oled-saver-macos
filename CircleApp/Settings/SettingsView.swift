@@ -165,7 +165,8 @@ private struct GeneralPageContent: View {
         }
 
         SettingsSection("Options") {
-            Toggle("Always On Mode (⌘⌥O)", isOn: $settings.alwaysOnMode)
+            Toggle("Always On Mode", isOn: $settings.alwaysOnMode)
+            HotkeyRecorderView()
             Toggle("Launch at Login", isOn: $settings.launchAtLogin)
         }
     }

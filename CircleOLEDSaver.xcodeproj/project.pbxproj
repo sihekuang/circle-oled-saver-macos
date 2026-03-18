@@ -22,6 +22,7 @@
 		E97C23A79BA96A755CE2285E /* IdleMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE1C19FB7F3EBFBE2CFA8176 /* IdleMonitor.swift */; };
 		EE1E893B9044569FC8385215 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B28A47E975AC8886020191AD /* Assets.xcassets */; };
 		F82F2FE1625333D6B4555B54 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776C67B3C2712EACED4B341A /* HotkeyManager.swift */; };
+		D1A2B3C4E5F60718293A4B5C /* HotkeyRecorderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A2B3C4E5F60718293A4B5D /* HotkeyRecorderView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,6 +45,7 @@
 		F676639A0CFB1EAB17577F9B /* TrayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrayManager.swift; sourceTree = "<group>"; };
 		F7F0E3C4237A5B8927234783 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		FA8F4249CF58700659E2E1CD /* ContentSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentSettingsView.swift; sourceTree = "<group>"; };
+		D1A2B3C4E5F60718293A4B5D /* HotkeyRecorderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyRecorderView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,6 +91,7 @@
 			children = (
 				FA8F4249CF58700659E2E1CD /* ContentSettingsView.swift */,
 				B630F8FB50438C3C153E0AC7 /* GeneralSettingsView.swift */,
+				D1A2B3C4E5F60718293A4B5D /* HotkeyRecorderView.swift */,
 				42D0183F6E06025B159237C7 /* SettingsView.swift */,
 				A2CAE65D8524A6C49B8828BD /* SettingsWindowController.swift */,
 			);
@@ -242,6 +245,7 @@
 				1F9668EB6A575803E482BBD6 /* ContentSettingsView.swift in Sources */,
 				515B7802A41B623573A5E626 /* GeneralSettingsView.swift in Sources */,
 				F82F2FE1625333D6B4555B54 /* HotkeyManager.swift in Sources */,
+				D1A2B3C4E5F60718293A4B5C /* HotkeyRecorderView.swift in Sources */,
 				E97C23A79BA96A755CE2285E /* IdleMonitor.swift in Sources */,
 				2E6F56E3F18EB8A163EEAA89 /* OverlayWindowController.swift in Sources */,
 				C0E7BE60DCF20A7790ABD59D /* SettingsView.swift in Sources */,

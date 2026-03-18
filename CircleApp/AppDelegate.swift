@@ -133,6 +133,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func handleSettingsChanged() {
         updateLoginItem()
         trayManager.updateMenu()
+        hotkeyManager.register()
 
         if !settings.enabled {
             dismissOverlays()
