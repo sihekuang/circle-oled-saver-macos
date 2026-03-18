@@ -19,7 +19,7 @@ final class TrayManager {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "circle.fill", accessibilityDescription: "Circle")
+            button.image = NSImage(named: "TrayIcon")
             button.image?.isTemplate = true
         }
 
@@ -35,7 +35,7 @@ final class TrayManager {
         let settings = SettingsManager.shared
 
         let enableItem = NSMenuItem(
-            title: settings.enabled ? "Disable" : "Enable",
+            title: settings.enabled ? "🟢 Enabled" : "🔴 Disabled",
             action: #selector(toggleEnabled),
             keyEquivalent: ""
         )

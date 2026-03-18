@@ -84,7 +84,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Overlay Management
 
     private func showOverlays() {
-        guard overlayController == nil else { return }
+        guard settings.enabled, overlayController == nil else { return }
         overlayController = OverlayWindowController()
         overlayController?.show()
     }
@@ -131,6 +131,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func handleSettingsChanged() {
         updateLoginItem()
         trayManager.updateMenu()
+
+        if !settings.enabled {
+            dismissOverlays()
+        } else if settings.alwaysOnMode {
+            showOverlays()
+        }
     }
 
     private func updateLoginItem() {
