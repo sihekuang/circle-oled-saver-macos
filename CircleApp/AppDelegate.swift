@@ -114,16 +114,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindowController: SettingsWindowController?
 
     private func showSettings() {
+        NSApp.activate(ignoringOtherApps: true)
+
         if let existing = settingsWindowController {
             existing.window?.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
+            existing.window?.orderFrontRegardless()
             return
         }
 
         let controller = SettingsWindowController()
         controller.showWindow(nil)
+        controller.window?.orderFrontRegardless()
         settingsWindowController = controller
-        NSApp.activate(ignoringOtherApps: true)
     }
 
     // MARK: - Settings Changes
