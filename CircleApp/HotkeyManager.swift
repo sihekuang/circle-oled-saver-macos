@@ -3,25 +3,46 @@ import Carbon
 import CircleKit
 
 final class HotkeyManager {
-    var onToggle: (() -> Void)?
+    var onAlwaysOnToggle: (() -> Void)?
+    var onEnableToggle: (() -> Void)?
+    var onSizeUp: (() -> Void)?
+    var onSizeDown: (() -> Void)?
+    var onRotateContent: (() -> Void)?
 
-    private var hotkeyRef: EventHotKeyRef?
+    private var hotkeyRefs: [EventHotKeyRef] = []
     private var eventHandler: EventHandlerRef?
+
+    private enum HotkeyID: UInt32 {
+        case alwaysOn = 1
+        case enable = 2
+        case sizeUp = 3
+        case sizeDown = 4
+        case rotateContent = 5
+    }
 
     func register() {
         unregister()
 
-        var hotKeyID = EventHotKeyID()
-        hotKeyID.signature = OSType(0x4352434C) // "CRCL"
-        hotKeyID.id = 1
-
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
 
         let handler: EventHandlerUPP = { _, event, userData -> OSStatus in
-            guard let userData else { return OSStatus(eventNotHandledErr) }
+            guard let userData, let event else { return OSStatus(eventNotHandledErr) }
+
+            var hotKeyID = EventHotKeyID()
+            GetEventParameter(event, EventParamName(kEventParamDirectObject),
+                              EventParamType(typeEventHotKeyID), nil,
+                              MemoryLayout<EventHotKeyID>.size, nil, &hotKeyID)
+
             let manager = Unmanaged<HotkeyManager>.fromOpaque(userData).takeUnretainedValue()
             DispatchQueue.main.async {
-                manager.onToggle?()
+                switch HotkeyID(rawValue: hotKeyID.id) {
+                case .alwaysOn: manager.onAlwaysOnToggle?()
+                case .enable: manager.onEnableToggle?()
+                case .sizeUp: manager.onSizeUp?()
+                case .sizeDown: manager.onSizeDown?()
+                case .rotateContent: manager.onRotateContent?()
+                case nil: break
+                }
             }
             return noErr
         }
@@ -29,17 +50,31 @@ final class HotkeyManager {
         let selfPtr = Unmanaged.passUnretained(self).toOpaque()
         InstallEventHandler(GetApplicationEventTarget(), handler, 1, &eventType, selfPtr, &eventHandler)
 
-        let hotkey = SettingsManager.shared.alwaysOnHotkey
-        let (keyCode, modifiers) = parseHotkey(hotkey)
+        let settings = SettingsManager.shared
+        let signature = OSType(0x4352434C) // "CRCL"
 
-        RegisterEventHotKey(keyCode, modifiers, hotKeyID, GetApplicationEventTarget(), 0, &hotkeyRef)
+        let hotkeys: [(HotkeyID, String)] = [
+            (.alwaysOn, settings.alwaysOnHotkey),
+            (.enable, settings.enableHotkey),
+            (.sizeUp, settings.sizeUpHotkey),
+            (.sizeDown, settings.sizeDownHotkey),
+            (.rotateContent, settings.rotateContentHotkey),
+        ]
+
+        for (id, hotkeyString) in hotkeys {
+            var ref: EventHotKeyRef?
+            var hkID = EventHotKeyID(signature: signature, id: id.rawValue)
+            let (keyCode, modifiers) = parseHotkey(hotkeyString)
+            RegisterEventHotKey(keyCode, modifiers, hkID, GetApplicationEventTarget(), 0, &ref)
+            if let ref { hotkeyRefs.append(ref) }
+        }
     }
 
     func unregister() {
-        if let hotkeyRef {
-            UnregisterEventHotKey(hotkeyRef)
+        for ref in hotkeyRefs {
+            UnregisterEventHotKey(ref)
         }
-        hotkeyRef = nil
+        hotkeyRefs.removeAll()
 
         if let eventHandler {
             RemoveEventHandler(eventHandler)
@@ -57,7 +92,7 @@ final class HotkeyManager {
         let parts = hotkey.lowercased().split(separator: "+").map(String.init)
 
         var modifiers: UInt32 = 0
-        var keyCode: UInt32 = UInt32(kVK_ANSI_O) // fallback
+        var keyCode: UInt32 = UInt32(kVK_ANSI_O)
 
         for part in parts {
             switch part {
@@ -72,7 +107,6 @@ final class HotkeyManager {
             }
         }
 
-        // Default to ⌘⌥ if no modifiers parsed
         if modifiers == 0 {
             modifiers = UInt32(cmdKey | optionKey)
         }

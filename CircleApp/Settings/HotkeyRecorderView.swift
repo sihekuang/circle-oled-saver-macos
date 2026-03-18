@@ -3,16 +3,17 @@ import Carbon
 import CircleKit
 
 struct HotkeyRecorderView: View {
-    @ObservedObject private var settings = SettingsManager.shared
+    let label: String
+    @Binding var hotkey: String
     @State private var isRecording = false
 
     var body: some View {
         HStack(spacing: 12) {
-            Text("Hotkey")
+            Text(label)
                 .frame(width: 90, alignment: .leading)
 
             Button(action: { isRecording.toggle() }) {
-                Text(isRecording ? "Press keys..." : displayString(for: settings.alwaysOnHotkey))
+                Text(isRecording ? "Press keys..." : displayString(for: hotkey))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
             }
@@ -24,8 +25,8 @@ struct HotkeyRecorderView: View {
             .background(
                 Group {
                     if isRecording {
-                        HotkeyListener { hotkey in
-                            settings.alwaysOnHotkey = hotkey
+                        HotkeyListener { recorded in
+                            hotkey = recorded
                             isRecording = false
                         }
                     }

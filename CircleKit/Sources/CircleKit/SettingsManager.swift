@@ -56,6 +56,18 @@ public final class SettingsManager: ObservableObject {
     @Published public var alwaysOnHotkey: String {
         didSet { defaults.set(alwaysOnHotkey, forKey: "alwaysOnHotkey"); notify() }
     }
+    @Published public var enableHotkey: String {
+        didSet { defaults.set(enableHotkey, forKey: "enableHotkey"); notify() }
+    }
+    @Published public var sizeUpHotkey: String {
+        didSet { defaults.set(sizeUpHotkey, forKey: "sizeUpHotkey"); notify() }
+    }
+    @Published public var sizeDownHotkey: String {
+        didSet { defaults.set(sizeDownHotkey, forKey: "sizeDownHotkey"); notify() }
+    }
+    @Published public var rotateContentHotkey: String {
+        didSet { defaults.set(rotateContentHotkey, forKey: "rotateContentHotkey"); notify() }
+    }
     @Published public var launchAtLogin: Bool {
         didSet { defaults.set(launchAtLogin, forKey: "launchAtLogin"); notify() }
     }
@@ -104,6 +116,10 @@ public final class SettingsManager: ObservableObject {
             "proximityFadeRadius": 150,
             "alwaysOnMode": false,
             "alwaysOnHotkey": "cmd+opt+o",
+            "enableHotkey": "cmd+opt+e",
+            "sizeUpHotkey": "cmd+opt+=",
+            "sizeDownHotkey": "cmd+opt+-",
+            "rotateContentHotkey": "cmd+opt+r",
             "launchAtLogin": false,
             "contentRotationEnabled": true,
             "contentRotationInterval": 10,
@@ -128,6 +144,10 @@ public final class SettingsManager: ObservableObject {
         self.proximityFadeRadius = defaults.integer(forKey: "proximityFadeRadius")
         self.alwaysOnMode = defaults.bool(forKey: "alwaysOnMode")
         self.alwaysOnHotkey = defaults.string(forKey: "alwaysOnHotkey") ?? "cmd+opt+o"
+        self.enableHotkey = defaults.string(forKey: "enableHotkey") ?? "cmd+opt+e"
+        self.sizeUpHotkey = defaults.string(forKey: "sizeUpHotkey") ?? "cmd+opt+="
+        self.sizeDownHotkey = defaults.string(forKey: "sizeDownHotkey") ?? "cmd+opt+-"
+        self.rotateContentHotkey = defaults.string(forKey: "rotateContentHotkey") ?? "cmd+opt+r"
         self.launchAtLogin = defaults.bool(forKey: "launchAtLogin")
         self.contentRotationEnabled = defaults.bool(forKey: "contentRotationEnabled")
         self.contentRotationInterval = defaults.integer(forKey: "contentRotationInterval")

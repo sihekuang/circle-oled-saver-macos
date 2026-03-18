@@ -166,8 +166,15 @@ private struct GeneralPageContent: View {
 
         SettingsSection("Options") {
             Toggle("Always On Mode", isOn: $settings.alwaysOnMode)
-            HotkeyRecorderView()
             Toggle("Launch at Login", isOn: $settings.launchAtLogin)
+        }
+
+        SettingsSection("Hotkeys") {
+            HotkeyRecorderView(label: "Enable", hotkey: $settings.enableHotkey)
+            HotkeyRecorderView(label: "Always On", hotkey: $settings.alwaysOnHotkey)
+            HotkeyRecorderView(label: "Size Up", hotkey: $settings.sizeUpHotkey)
+            HotkeyRecorderView(label: "Size Down", hotkey: $settings.sizeDownHotkey)
+            HotkeyRecorderView(label: "Rotate", hotkey: $settings.rotateContentHotkey)
         }
     }
 }
