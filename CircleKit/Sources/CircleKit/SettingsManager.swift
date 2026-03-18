@@ -77,6 +77,15 @@ public final class SettingsManager: ObservableObject {
     @Published public var showBattery: Bool {
         didSet { defaults.set(showBattery, forKey: "showBattery"); notify() }
     }
+    @Published public var stockEnabled: Bool {
+        didSet { defaults.set(stockEnabled, forKey: "stockEnabled"); notify() }
+    }
+    @Published public var stockSymbols: String {
+        didSet { defaults.set(stockSymbols, forKey: "stockSymbols"); notify() }
+    }
+    @Published public var stockRefreshSeconds: Int {
+        didSet { defaults.set(stockRefreshSeconds, forKey: "stockRefreshSeconds"); notify() }
+    }
 
     private init() {
         let defaults = UserDefaults(suiteName: SettingsManager.suiteName) ?? .standard
@@ -102,6 +111,9 @@ public final class SettingsManager: ObservableObject {
             "clockFormat24h": false,
             "systemInfoEnabled": true,
             "showBattery": true,
+            "stockEnabled": false,
+            "stockSymbols": "AAPL, GOOGL, TSLA",
+            "stockRefreshSeconds": 300,
         ])
 
         // Load values
@@ -123,6 +135,9 @@ public final class SettingsManager: ObservableObject {
         self.clockFormat24h = defaults.bool(forKey: "clockFormat24h")
         self.systemInfoEnabled = defaults.bool(forKey: "systemInfoEnabled")
         self.showBattery = defaults.bool(forKey: "showBattery")
+        self.stockEnabled = defaults.bool(forKey: "stockEnabled")
+        self.stockSymbols = defaults.string(forKey: "stockSymbols") ?? "AAPL, GOOGL, TSLA"
+        self.stockRefreshSeconds = defaults.integer(forKey: "stockRefreshSeconds")
     }
 
     private func notify() {

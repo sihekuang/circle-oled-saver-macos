@@ -61,6 +61,16 @@ public final class CircleRenderer {
         if settings.systemInfoEnabled {
             providers.append(SystemInfoProvider(showBattery: settings.showBattery))
         }
+        if settings.stockEnabled {
+            let symbols = settings.stockSymbols
+                .split(separator: ",")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty }
+            providers.append(StockProvider(
+                symbols: symbols,
+                refreshSeconds: settings.stockRefreshSeconds
+            ))
+        }
 
         guard !providers.isEmpty else { return }
 
