@@ -46,26 +46,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Setup hotkeys
         hotkeyManager = HotkeyManager()
         hotkeyManager.onAlwaysOnToggle = { [weak self] in
+            self?.idleMonitor.suppressDismissal()
             self?.toggleAlwaysOn()
         }
         hotkeyManager.onEnableToggle = { [weak self] in
             guard let self else { return }
+            self.idleMonitor.suppressDismissal()
             self.settings.enabled.toggle()
             self.trayManager.updateMenu()
         }
         hotkeyManager.onSizeUp = { [weak self] in
             guard let self else { return }
+            self.idleMonitor.suppressDismissal()
             let step = self.settings.ballSizeMode == .percentage ? 1 : 10
             let max = self.settings.ballSizeMode == .percentage ? 30 : 500
             self.settings.ballSize = min(self.settings.ballSize + step, max)
         }
         hotkeyManager.onSizeDown = { [weak self] in
             guard let self else { return }
+            self.idleMonitor.suppressDismissal()
             let step = self.settings.ballSizeMode == .percentage ? 1 : 10
             let min = self.settings.ballSizeMode == .percentage ? 1 : 20
             self.settings.ballSize = max(self.settings.ballSize - step, min)
         }
-        hotkeyManager.onRotateContent = {
+        hotkeyManager.onRotateContent = { [weak self] in
+            self?.idleMonitor.suppressDismissal()
             NotificationCenter.default.post(name: ContentRotator.rotateNowNotification, object: nil)
         }
         hotkeyManager.register()

@@ -10,6 +10,12 @@ final class IdleMonitor {
     private var isScreensaverActive = false
     private let pollInterval: TimeInterval = 1.0
     private var activity: NSObjectProtocol?
+    private var suppressUntil: Date = .distantPast
+
+    /// Temporarily ignore activity so hotkey presses don't dismiss the overlay.
+    func suppressDismissal(for seconds: TimeInterval = 3.0) {
+        suppressUntil = Date().addingTimeInterval(seconds)
+    }
 
     func start() {
         guard timer == nil else { return }
@@ -48,7 +54,7 @@ final class IdleMonitor {
                 onIdle?()
             }
         } else {
-            if minIdle < 2 && !settings.alwaysOnMode {
+            if minIdle < 2 && !settings.alwaysOnMode && Date() > suppressUntil {
                 isScreensaverActive = false
                 onActive?()
             }
