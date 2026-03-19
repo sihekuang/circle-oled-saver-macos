@@ -8,6 +8,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var idleMonitor: IdleMonitor!
     private var hotkeyManager: HotkeyManager!
     private let settings = SettingsManager.shared
+    private let hud = HUDController.shared
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("[Circle] applicationDidFinishLaunching called")
@@ -48,12 +49,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hotkeyManager.onAlwaysOnToggle = { [weak self] in
             self?.idleMonitor.suppressDismissal()
             self?.toggleAlwaysOn()
+            if let self { self.hud.showAlwaysOnToggle(isOn: self.settings.alwaysOnMode) }
         }
         hotkeyManager.onEnableToggle = { [weak self] in
             guard let self else { return }
             self.idleMonitor.suppressDismissal()
             self.settings.enabled.toggle()
             self.trayManager.updateMenu()
+            self.hud.showEnableToggle(isOn: self.settings.enabled)
         }
         hotkeyManager.onSizeUp = { [weak self] in
             guard let self else { return }
@@ -61,6 +64,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let step = self.settings.ballSizeMode == .percentage ? 1 : 10
             let max = self.settings.ballSizeMode == .percentage ? 30 : 500
             self.settings.ballSize = min(self.settings.ballSize + step, max)
+            self.hud.showSizeChange(fraction: self.sizeFraction())
         }
         hotkeyManager.onSizeDown = { [weak self] in
             guard let self else { return }
@@ -68,10 +72,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let step = self.settings.ballSizeMode == .percentage ? 1 : 10
             let min = self.settings.ballSizeMode == .percentage ? 1 : 20
             self.settings.ballSize = max(self.settings.ballSize - step, min)
+            self.hud.showSizeChange(fraction: self.sizeFraction())
         }
         hotkeyManager.onRotateContent = { [weak self] in
             self?.idleMonitor.suppressDismissal()
             NotificationCenter.default.post(name: ContentRotator.rotateNowNotification, object: nil)
+            self?.hud.showContentRotation(contentName: self?.currentContentName() ?? "Content")
         }
         hotkeyManager.register()
 
@@ -188,6 +194,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self, self.settings.alwaysOnMode else { return }
             self.showOverlays()
         }
+    }
+
+    // MARK: - HUD Helpers
+
+    private func sizeFraction() -> Double {
+        let minVal = settings.ballSizeMode == .percentage ? 1 : 20
+        let maxVal = settings.ballSizeMode == .percentage ? 30 : 500
+        return Double(settings.ballSize - minVal) / Double(maxVal - minVal)
+    }
+
+    private func currentContentName() -> String {
+        // Determine which content is next based on enabled providers
+        // The rotator cycles through enabled content types
+        let enabledTypes: [String] = {
+            var types: [String] = []
+            if settings.clockEnabled { types.append("Clock") }
+            if settings.systemInfoEnabled { types.append("System Info") }
+            if settings.stockEnabled { types.append("Stocks") }
+            return types
+        }()
+        // We can't know the exact rotator index, so show the next likely content
+        // For a simple approach, just show "Content" if we can't determine
+        return enabledTypes.first ?? "Content"
     }
 
     private func cleanup() {

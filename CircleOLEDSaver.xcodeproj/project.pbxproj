@@ -17,12 +17,14 @@
 		A2742993B2C2CEA4EF5AC994 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA5DA62BEB98CC2A24D4828F /* main.swift */; };
 		AA229DB09BFADA87F2247783 /* TrayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F676639A0CFB1EAB17577F9B /* TrayManager.swift */; };
 		BA88B2CBE9BB8B17C48ECF3F /* CircleKit in Frameworks */ = {isa = PBXBuildFile; productRef = 43807AB23D6846E5D226D64D /* CircleKit */; };
+		M1A2C3H4U5D6F7R8A9M0E1W2 /* MacHUD in Frameworks */ = {isa = PBXBuildFile; productRef = M1A2C3H4U5D6F7R8A9M0E1W3 /* MacHUD */; };
 		C0E7BE60DCF20A7790ABD59D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42D0183F6E06025B159237C7 /* SettingsView.swift */; };
 		DC13A3BEF7AB9020CC97AB07 /* CircleSaverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA0D2BD7DA581F51F431D6E /* CircleSaverView.swift */; };
 		E97C23A79BA96A755CE2285E /* IdleMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE1C19FB7F3EBFBE2CFA8176 /* IdleMonitor.swift */; };
 		EE1E893B9044569FC8385215 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B28A47E975AC8886020191AD /* Assets.xcassets */; };
 		F82F2FE1625333D6B4555B54 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776C67B3C2712EACED4B341A /* HotkeyManager.swift */; };
 		D1A2B3C4E5F60718293A4B5C /* HotkeyRecorderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A2B3C4E5F60718293A4B5D /* HotkeyRecorderView.swift */; };
+		H1U2D3W4C5O6N7T8R9L0A1B2 /* HUDWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1U2D3W4C5O6N7T8R9L0A1B3 /* HUDWindowController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +48,7 @@
 		F7F0E3C4237A5B8927234783 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		FA8F4249CF58700659E2E1CD /* ContentSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentSettingsView.swift; sourceTree = "<group>"; };
 		D1A2B3C4E5F60718293A4B5D /* HotkeyRecorderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyRecorderView.swift; sourceTree = "<group>"; };
+		H1U2D3W4C5O6N7T8R9L0A1B3 /* HUDWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDWindowController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +65,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BA88B2CBE9BB8B17C48ECF3F /* CircleKit in Frameworks */,
+				M1A2C3H4U5D6F7R8A9M0E1W2 /* MacHUD in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -133,6 +137,7 @@
 				58A019C3848E903D1743D72F /* CircleApp.entitlements */,
 				EA85BC3E5CFE70C50E68021B /* CircleOverlayView.swift */,
 				776C67B3C2712EACED4B341A /* HotkeyManager.swift */,
+				H1U2D3W4C5O6N7T8R9L0A1B3 /* HUDWindowController.swift */,
 				AE1C19FB7F3EBFBE2CFA8176 /* IdleMonitor.swift */,
 				5405950EB45A095161D50869 /* Info.plist */,
 				DA5DA62BEB98CC2A24D4828F /* main.swift */,
@@ -179,6 +184,7 @@
 			name = CircleApp;
 			packageProductDependencies = (
 				43807AB23D6846E5D226D64D /* CircleKit */,
+				M1A2C3H4U5D6F7R8A9M0E1W3 /* MacHUD */,
 			);
 			productName = CircleApp;
 			productReference = 229471C9116CB6AF3C79C58D /* Circle.app */;
@@ -204,6 +210,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				092CF6751C752D2915CEF894 /* XCLocalSwiftPackageReference "CircleKit" */,
+				M1A2C3H4U5D6F7R8A9M0PKG /* XCRemoteSwiftPackageReference "MacHUD" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0A577006CFD4DBE8497FB780 /* Products */;
@@ -246,6 +253,7 @@
 				515B7802A41B623573A5E626 /* GeneralSettingsView.swift in Sources */,
 				F82F2FE1625333D6B4555B54 /* HotkeyManager.swift in Sources */,
 				D1A2B3C4E5F60718293A4B5C /* HotkeyRecorderView.swift in Sources */,
+				H1U2D3W4C5O6N7T8R9L0A1B2 /* HUDWindowController.swift in Sources */,
 				E97C23A79BA96A755CE2285E /* IdleMonitor.swift in Sources */,
 				2E6F56E3F18EB8A163EEAA89 /* OverlayWindowController.swift in Sources */,
 				C0E7BE60DCF20A7790ABD59D /* SettingsView.swift in Sources */,
@@ -496,6 +504,17 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		M1A2C3H4U5D6F7R8A9M0PKG /* XCRemoteSwiftPackageReference "MacHUD" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/orchetect/MacHUD";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.5.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		43807AB23D6846E5D226D64D /* CircleKit */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -504,6 +523,11 @@
 		5FFC558C566188C109FA6096 /* CircleKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = CircleKit;
+		};
+		M1A2C3H4U5D6F7R8A9M0E1W3 /* MacHUD */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = M1A2C3H4U5D6F7R8A9M0PKG /* XCRemoteSwiftPackageReference "MacHUD" */;
+			productName = MacHUD;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
