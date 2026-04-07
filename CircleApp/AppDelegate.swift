@@ -26,6 +26,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        // Default all screens to selected on first launch
+        if settings.oledDisplayIDs.isEmpty {
+            settings.oledDisplayIDs = Set(NSScreen.screens.map { OverlayWindowController.displayID(for: $0) })
+        }
+
         print("[Circle] Setting up tray...")
         // Setup tray
         trayManager = TrayManager(
@@ -168,7 +173,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         if !settings.enabled {
             dismissOverlays()
-        } else if settings.alwaysOnMode {
+        } else if settings.alwaysOnMode || overlayController != nil {
+            // Recreate overlays to reflect any display selection changes
+            dismissOverlays()
             showOverlays()
         }
     }

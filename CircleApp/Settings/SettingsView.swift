@@ -148,6 +148,21 @@ private struct GeneralPageContent: View {
     @ObservedObject private var settings = SettingsManager.shared
 
     var body: some View {
+        if settings.enabled && settings.oledDisplayIDs.isEmpty {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.yellow)
+                Text("No displays selected. The screen saver won't appear on any screen.")
+                    .font(.callout)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.yellow.opacity(0.15))
+            )
+        }
+
         SettingsSection("Screensaver") {
             Toggle("Enabled", isOn: $settings.enabled)
 
@@ -162,6 +177,14 @@ private struct GeneralPageContent: View {
                 suffix: "s",
                 valueWidth: 40
             )
+        }
+
+        SettingsSection("Displays") {
+            Text("Select which screens are OLED.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            DisplayListView(oledDisplayIDs: $settings.oledDisplayIDs)
         }
 
         SettingsSection("Options") {
@@ -350,6 +373,65 @@ private struct AboutPageContent: View {
                         .foregroundColor(.secondary)
                 }
             }
+        }
+    }
+}
+
+// MARK: - Display List
+
+private struct DisplayListView: View {
+    @Binding var oledDisplayIDs: Set<String>
+    @State private var screens: [(id: String, name: String)] = []
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(screens, id: \.id) { screen in
+                Toggle(isOn: Binding(
+                    get: { oledDisplayIDs.contains(screen.id) },
+                    set: { enabled in
+                        if enabled {
+                            oledDisplayIDs.insert(screen.id)
+                        } else {
+                            oledDisplayIDs.remove(screen.id)
+                        }
+                    }
+                )) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "display")
+                            .foregroundColor(.secondary)
+                        Text(screen.name)
+                    }
+                }
+            }
+
+            if screens.isEmpty {
+                Text("No displays detected")
+                    .foregroundColor(.secondary)
+            }
+
+            HStack(spacing: 12) {
+                Button("Select All") {
+                    oledDisplayIDs = Set(screens.map(\.id))
+                }
+                Button("Select None") {
+                    oledDisplayIDs.removeAll()
+                }
+            }
+            .font(.caption)
+        }
+        .onAppear { refreshScreens() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didChangeScreenParametersNotification)) { _ in
+            refreshScreens()
+        }
+    }
+
+    private func refreshScreens() {
+        screens = NSScreen.screens.enumerated().map { (i, screen) in
+            let displayID = OverlayWindowController.displayID(for: screen)
+            let name = screen.localizedName
+            let size = screen.frame.size
+            let label = "\(name) — \(Int(size.width))×\(Int(size.height))"
+            return (id: displayID, name: label)
         }
     }
 }

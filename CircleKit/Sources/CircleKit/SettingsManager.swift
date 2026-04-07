@@ -98,6 +98,9 @@ public final class SettingsManager: ObservableObject {
     @Published public var stockRefreshSeconds: Int {
         didSet { defaults.set(stockRefreshSeconds, forKey: "stockRefreshSeconds"); notify() }
     }
+    @Published public var oledDisplayIDs: Set<String> {
+        didSet { defaults.set(Array(oledDisplayIDs), forKey: "oledDisplayIDs"); notify() }
+    }
 
     private init() {
         let defaults = UserDefaults(suiteName: SettingsManager.suiteName) ?? .standard
@@ -133,6 +136,7 @@ public final class SettingsManager: ObservableObject {
         ])
 
         // Load values
+        self.oledDisplayIDs = Set(defaults.stringArray(forKey: "oledDisplayIDs") ?? [])
         self.enabled = defaults.bool(forKey: "enabled")
         self.idleTimeout = defaults.integer(forKey: "idleTimeout")
         self.ballSizeMode = BallSizeMode(rawValue: defaults.string(forKey: "ballSizeMode") ?? "percentage") ?? .percentage
@@ -158,6 +162,11 @@ public final class SettingsManager: ObservableObject {
         self.stockEnabled = defaults.bool(forKey: "stockEnabled")
         self.stockSymbols = defaults.string(forKey: "stockSymbols") ?? "AAPL, GOOGL, TSLA"
         self.stockRefreshSeconds = defaults.integer(forKey: "stockRefreshSeconds")
+    }
+
+    /// Returns true if the overlay should show on a screen with this display ID.
+    public func isOLEDScreen(displayID: String) -> Bool {
+        oledDisplayIDs.contains(displayID)
     }
 
     private func notify() {
