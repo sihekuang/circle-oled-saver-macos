@@ -5,10 +5,23 @@ final class OverlayWindowController {
     private var windows: [NSWindow] = []
     private var overlayViews: [CircleOverlayView] = []
 
+    static func displayID(for screen: NSScreen) -> String {
+        let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID ?? 0
+        return String(id)
+    }
+
     func show() {
+        let settings = SettingsManager.shared
+
         for (i, screen) in NSScreen.screens.enumerated() {
-            NSLog("[OverlayWindow] Screen %d: frame=%@ visibleFrame=%@ backingScaleFactor=%.1f",
-                  i, NSStringFromRect(screen.frame), NSStringFromRect(screen.visibleFrame), screen.backingScaleFactor)
+            let displayID = Self.displayID(for: screen)
+            NSLog("[OverlayWindow] Screen %d (displayID=%@): frame=%@ visibleFrame=%@ backingScaleFactor=%.1f",
+                  i, displayID, NSStringFromRect(screen.frame), NSStringFromRect(screen.visibleFrame), screen.backingScaleFactor)
+
+            guard settings.isOLEDScreen(displayID: displayID) else {
+                NSLog("[OverlayWindow] Screen %d: skipped (not marked as OLED)", i)
+                continue
+            }
 
             let screenRect = NSRect(origin: .zero, size: screen.frame.size)
             let window = NSWindow(
