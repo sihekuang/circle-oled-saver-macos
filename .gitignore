@@ -15,3 +15,6 @@ build/
 
 # Claude Code
 .claude/
+
+# Obsidian
+.obsidian/
