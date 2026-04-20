@@ -126,7 +126,7 @@ public final class SettingsManager: ObservableObject {
             "sizeUpHotkey": "cmd+opt+=",
             "sizeDownHotkey": "cmd+opt+-",
             "rotateContentHotkey": "cmd+opt+r",
-            "menuBarAutoHideHotkey": "cmd+opt+m",
+            "menuBarAutoHideHotkey": "cmd+opt+b",
             "launchAtLogin": false,
             "contentRotationEnabled": true,
             "contentRotationInterval": 10,
@@ -156,7 +156,7 @@ public final class SettingsManager: ObservableObject {
         self.sizeUpHotkey = defaults.string(forKey: "sizeUpHotkey") ?? "cmd+opt+="
         self.sizeDownHotkey = defaults.string(forKey: "sizeDownHotkey") ?? "cmd+opt+-"
         self.rotateContentHotkey = defaults.string(forKey: "rotateContentHotkey") ?? "cmd+opt+r"
-        self.menuBarAutoHideHotkey = defaults.string(forKey: "menuBarAutoHideHotkey") ?? "cmd+opt+m"
+        self.menuBarAutoHideHotkey = defaults.string(forKey: "menuBarAutoHideHotkey") ?? "cmd+opt+b"
         self.launchAtLogin = defaults.bool(forKey: "launchAtLogin")
         self.contentRotationEnabled = defaults.bool(forKey: "contentRotationEnabled")
         self.contentRotationInterval = defaults.integer(forKey: "contentRotationInterval")
