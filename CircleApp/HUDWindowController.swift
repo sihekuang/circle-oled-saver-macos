@@ -30,6 +30,14 @@ final class HUDController {
         ))
     }
 
+    func showMenuBarAutoHideToggle(isOn: Bool) {
+        let iconName = isOn ? "menubar.arrow.up.rectangle" : "menubar.rectangle"
+        show(.imageAndText(
+            image: .static(.symbol(systemName: iconName)),
+            title: isOn ? "Menu Bar Auto-Hide" : "Menu Bar Visible"
+        ))
+    }
+
     func showContentRotation(contentName: String) {
         let iconName: String
         switch contentName.lowercased() {

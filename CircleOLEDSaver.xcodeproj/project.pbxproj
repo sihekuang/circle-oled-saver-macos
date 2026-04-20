@@ -14,31 +14,33 @@
 		2E6F56E3F18EB8A163EEAA89 /* OverlayWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2EFAE53D00E0BDA2A16B644 /* OverlayWindowController.swift */; };
 		515B7802A41B623573A5E626 /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B630F8FB50438C3C153E0AC7 /* GeneralSettingsView.swift */; };
 		7B61B869FC579A98BE5F0A11 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CAE65D8524A6C49B8828BD /* SettingsWindowController.swift */; };
+		A058F15B2DECE6373078CF46 /* MacHUD in Frameworks */ = {isa = PBXBuildFile; productRef = 8A1F3481F0D2694FF39F884E /* MacHUD */; };
 		A2742993B2C2CEA4EF5AC994 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA5DA62BEB98CC2A24D4828F /* main.swift */; };
+		A4012D47DB75E0A0049D5709 /* HUDWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30C5E6501F6A36B46E19911F /* HUDWindowController.swift */; };
 		AA229DB09BFADA87F2247783 /* TrayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F676639A0CFB1EAB17577F9B /* TrayManager.swift */; };
 		BA88B2CBE9BB8B17C48ECF3F /* CircleKit in Frameworks */ = {isa = PBXBuildFile; productRef = 43807AB23D6846E5D226D64D /* CircleKit */; };
-		M1A2C3H4U5D6F7R8A9M0E1W2 /* MacHUD in Frameworks */ = {isa = PBXBuildFile; productRef = M1A2C3H4U5D6F7R8A9M0E1W3 /* MacHUD */; };
 		C0E7BE60DCF20A7790ABD59D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42D0183F6E06025B159237C7 /* SettingsView.swift */; };
+		D0A545D777277482B37858BF /* HotkeyRecorderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3F12AD1B971251B8B3DFC30 /* HotkeyRecorderView.swift */; };
 		DC13A3BEF7AB9020CC97AB07 /* CircleSaverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDA0D2BD7DA581F51F431D6E /* CircleSaverView.swift */; };
 		E97C23A79BA96A755CE2285E /* IdleMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE1C19FB7F3EBFBE2CFA8176 /* IdleMonitor.swift */; };
 		EE1E893B9044569FC8385215 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B28A47E975AC8886020191AD /* Assets.xcassets */; };
 		F82F2FE1625333D6B4555B54 /* HotkeyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776C67B3C2712EACED4B341A /* HotkeyManager.swift */; };
-		D1A2B3C4E5F60718293A4B5C /* HotkeyRecorderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A2B3C4E5F60718293A4B5D /* HotkeyRecorderView.swift */; };
-		H1U2D3W4C5O6N7T8R9L0A1B2 /* HUDWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = H1U2D3W4C5O6N7T8R9L0A1B3 /* HUDWindowController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0E9043555548A01B55E18F83 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		229471C9116CB6AF3C79C58D /* Circle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Circle.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		229471C9116CB6AF3C79C58D /* CircleApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CircleApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		30C5E6501F6A36B46E19911F /* HUDWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDWindowController.swift; sourceTree = "<group>"; };
 		42D0183F6E06025B159237C7 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		5405950EB45A095161D50869 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		58A019C3848E903D1743D72F /* CircleApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CircleApp.entitlements; sourceTree = "<group>"; };
 		776C67B3C2712EACED4B341A /* HotkeyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyManager.swift; sourceTree = "<group>"; };
-		7A04D25E178622374F996859 /* CircleKit */ = {isa = PBXFileReference; lastKnownFileType = folder; path = CircleKit; sourceTree = SOURCE_ROOT; };
+		7A04D25E178622374F996859 /* CircleKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CircleKit; path = CircleKit; sourceTree = SOURCE_ROOT; };
 		A2CAE65D8524A6C49B8828BD /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		AE1C19FB7F3EBFBE2CFA8176 /* IdleMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdleMonitor.swift; sourceTree = "<group>"; };
-		AF2C454A66C173A734257128 /* Circle.saver */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = Circle.saver; sourceTree = BUILT_PRODUCTS_DIR; };
+		AF2C454A66C173A734257128 /* CircleSaver.bundle */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CircleSaver.bundle; sourceTree = BUILT_PRODUCTS_DIR; };
 		B28A47E975AC8886020191AD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B3F12AD1B971251B8B3DFC30 /* HotkeyRecorderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyRecorderView.swift; sourceTree = "<group>"; };
 		B630F8FB50438C3C153E0AC7 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		DA5DA62BEB98CC2A24D4828F /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		DDA0D2BD7DA581F51F431D6E /* CircleSaverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleSaverView.swift; sourceTree = "<group>"; };
@@ -47,8 +49,6 @@
 		F676639A0CFB1EAB17577F9B /* TrayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrayManager.swift; sourceTree = "<group>"; };
 		F7F0E3C4237A5B8927234783 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		FA8F4249CF58700659E2E1CD /* ContentSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentSettingsView.swift; sourceTree = "<group>"; };
-		D1A2B3C4E5F60718293A4B5D /* HotkeyRecorderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyRecorderView.swift; sourceTree = "<group>"; };
-		H1U2D3W4C5O6N7T8R9L0A1B3 /* HUDWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDWindowController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,7 +65,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BA88B2CBE9BB8B17C48ECF3F /* CircleKit in Frameworks */,
-				M1A2C3H4U5D6F7R8A9M0E1W2 /* MacHUD in Frameworks */,
+				A058F15B2DECE6373078CF46 /* MacHUD in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -75,8 +75,8 @@
 		0A577006CFD4DBE8497FB780 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				229471C9116CB6AF3C79C58D /* Circle.app */,
-				AF2C454A66C173A734257128 /* Circle.saver */,
+				229471C9116CB6AF3C79C58D /* CircleApp.app */,
+				AF2C454A66C173A734257128 /* CircleSaver.bundle */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,7 +95,7 @@
 			children = (
 				FA8F4249CF58700659E2E1CD /* ContentSettingsView.swift */,
 				B630F8FB50438C3C153E0AC7 /* GeneralSettingsView.swift */,
-				D1A2B3C4E5F60718293A4B5D /* HotkeyRecorderView.swift */,
+				B3F12AD1B971251B8B3DFC30 /* HotkeyRecorderView.swift */,
 				42D0183F6E06025B159237C7 /* SettingsView.swift */,
 				A2CAE65D8524A6C49B8828BD /* SettingsWindowController.swift */,
 			);
@@ -137,7 +137,7 @@
 				58A019C3848E903D1743D72F /* CircleApp.entitlements */,
 				EA85BC3E5CFE70C50E68021B /* CircleOverlayView.swift */,
 				776C67B3C2712EACED4B341A /* HotkeyManager.swift */,
-				H1U2D3W4C5O6N7T8R9L0A1B3 /* HUDWindowController.swift */,
+				30C5E6501F6A36B46E19911F /* HUDWindowController.swift */,
 				AE1C19FB7F3EBFBE2CFA8176 /* IdleMonitor.swift */,
 				5405950EB45A095161D50869 /* Info.plist */,
 				DA5DA62BEB98CC2A24D4828F /* main.swift */,
@@ -166,7 +166,7 @@
 				5FFC558C566188C109FA6096 /* CircleKit */,
 			);
 			productName = CircleSaver;
-			productReference = AF2C454A66C173A734257128 /* Circle.saver */;
+			productReference = AF2C454A66C173A734257128 /* CircleSaver.bundle */;
 			productType = "com.apple.product-type.bundle";
 		};
 		BB2EA0B9B880EED1B2DDC1B9 /* CircleApp */ = {
@@ -184,10 +184,10 @@
 			name = CircleApp;
 			packageProductDependencies = (
 				43807AB23D6846E5D226D64D /* CircleKit */,
-				M1A2C3H4U5D6F7R8A9M0E1W3 /* MacHUD */,
+				8A1F3481F0D2694FF39F884E /* MacHUD */,
 			);
 			productName = CircleApp;
-			productReference = 229471C9116CB6AF3C79C58D /* Circle.app */;
+			productReference = 229471C9116CB6AF3C79C58D /* CircleApp.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -197,7 +197,9 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2620;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+				};
 			};
 			buildConfigurationList = F938768E5827A79A0F45494E /* Build configuration list for PBXProject "CircleOLEDSaver" */;
 			developmentRegion = en;
@@ -209,8 +211,8 @@
 			mainGroup = B2C4379B034F780FEA112FFA;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				D56E0D1DB0E9F6FBF62784F4 /* XCRemoteSwiftPackageReference "MacHUD" */,
 				092CF6751C752D2915CEF894 /* XCLocalSwiftPackageReference "CircleKit" */,
-				M1A2C3H4U5D6F7R8A9M0PKG /* XCRemoteSwiftPackageReference "MacHUD" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 0A577006CFD4DBE8497FB780 /* Products */;
@@ -251,9 +253,9 @@
 				292473F817BB11AE3BFA75D1 /* CircleOverlayView.swift in Sources */,
 				1F9668EB6A575803E482BBD6 /* ContentSettingsView.swift in Sources */,
 				515B7802A41B623573A5E626 /* GeneralSettingsView.swift in Sources */,
+				A4012D47DB75E0A0049D5709 /* HUDWindowController.swift in Sources */,
 				F82F2FE1625333D6B4555B54 /* HotkeyManager.swift in Sources */,
-				D1A2B3C4E5F60718293A4B5C /* HotkeyRecorderView.swift in Sources */,
-				H1U2D3W4C5O6N7T8R9L0A1B2 /* HUDWindowController.swift in Sources */,
+				D0A545D777277482B37858BF /* HotkeyRecorderView.swift in Sources */,
 				E97C23A79BA96A755CE2285E /* IdleMonitor.swift in Sources */,
 				2E6F56E3F18EB8A163EEAA89 /* OverlayWindowController.swift in Sources */,
 				C0E7BE60DCF20A7790ABD59D /* SettingsView.swift in Sources */,
@@ -272,13 +274,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CircleApp/CircleApp.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEAD_CODE_STRIPPING = YES;
 				INFOPLIST_FILE = CircleApp/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.shoebillsoft.circle;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.danielkurin.circle;
 				PRODUCT_NAME = Circle;
 				SDKROOT = macosx;
 			};
@@ -288,13 +286,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				DEAD_CODE_STRIPPING = YES;
 				INFOPLIST_FILE = CircleSaver/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@loader_path/../Frameworks",
-				);
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.danielkurin.circle.saver;
 				PRODUCT_NAME = Circle;
 				SDKROOT = macosx;
@@ -337,11 +330,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -355,7 +346,6 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.9;
@@ -366,13 +356,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COMBINE_HIDPI_IMAGES = YES;
-				DEAD_CODE_STRIPPING = YES;
 				INFOPLIST_FILE = CircleSaver/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@loader_path/../Frameworks",
-				);
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.danielkurin.circle.saver;
 				PRODUCT_NAME = Circle;
 				SDKROOT = macosx;
@@ -387,13 +372,9 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = CircleApp/CircleApp.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				DEAD_CODE_STRIPPING = YES;
 				INFOPLIST_FILE = CircleApp/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.shoebillsoft.circle;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.danielkurin.circle;
 				PRODUCT_NAME = Circle;
 				SDKROOT = macosx;
 			};
@@ -433,11 +414,9 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -458,7 +437,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.9;
@@ -505,7 +483,7 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		M1A2C3H4U5D6F7R8A9M0PKG /* XCRemoteSwiftPackageReference "MacHUD" */ = {
+		D56E0D1DB0E9F6FBF62784F4 /* XCRemoteSwiftPackageReference "MacHUD" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/orchetect/MacHUD";
 			requirement = {
@@ -524,9 +502,9 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = CircleKit;
 		};
-		M1A2C3H4U5D6F7R8A9M0E1W3 /* MacHUD */ = {
+		8A1F3481F0D2694FF39F884E /* MacHUD */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = M1A2C3H4U5D6F7R8A9M0PKG /* XCRemoteSwiftPackageReference "MacHUD" */;
+			package = D56E0D1DB0E9F6FBF62784F4 /* XCRemoteSwiftPackageReference "MacHUD" */;
 			productName = MacHUD;
 		};
 /* End XCSwiftPackageProductDependency section */

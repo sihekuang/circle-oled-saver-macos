@@ -198,6 +198,7 @@ private struct GeneralPageContent: View {
             HotkeyRecorderView(label: "Size Up", hotkey: $settings.sizeUpHotkey)
             HotkeyRecorderView(label: "Size Down", hotkey: $settings.sizeDownHotkey)
             HotkeyRecorderView(label: "Rotate", hotkey: $settings.rotateContentHotkey)
+            HotkeyRecorderView(label: "Menu Bar Auto-Hide", hotkey: $settings.menuBarAutoHideHotkey)
         }
     }
 }

@@ -20,6 +20,8 @@
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Circle toggles macOS&apos; menu bar auto-hide setting when you press the menu-bar hotkey.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Daniel Kurin. All rights reserved.</string>
 </dict>

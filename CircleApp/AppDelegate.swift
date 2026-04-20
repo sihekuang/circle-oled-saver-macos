@@ -84,6 +84,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NotificationCenter.default.post(name: ContentRotator.rotateNowNotification, object: nil)
             self?.hud.showContentRotation(contentName: self?.currentContentName() ?? "Content")
         }
+        hotkeyManager.onMenuBarAutoHideToggle = { [weak self] in
+            guard let self else { return }
+            self.idleMonitor.suppressDismissal()
+            if let isOn = self.toggleMenuBarAutoHide() {
+                self.hud.showMenuBarAutoHideToggle(isOn: isOn)
+            }
+        }
         hotkeyManager.register()
 
         // Restore always-on state
@@ -143,6 +150,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             dismissOverlays()
             idleMonitor.start()
         }
+    }
+
+    // MARK: - Menu Bar Auto-Hide
+
+    private func toggleMenuBarAutoHide() -> Bool? {
+        let script = """
+        tell application "System Events"
+            tell dock preferences
+                set autohide menu bar to not autohide menu bar
+                return autohide menu bar
+            end tell
+        end tell
+        """
+        var error: NSDictionary?
+        guard let appleScript = NSAppleScript(source: script) else { return nil }
+        let result = appleScript.executeAndReturnError(&error)
+        if let error {
+            print("[Circle] Menu bar auto-hide toggle failed: \(error)")
+            return nil
+        }
+        return result.booleanValue
     }
 
     // MARK: - Settings

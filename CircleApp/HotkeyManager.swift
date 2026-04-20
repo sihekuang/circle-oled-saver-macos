@@ -8,6 +8,7 @@ final class HotkeyManager {
     var onSizeUp: (() -> Void)?
     var onSizeDown: (() -> Void)?
     var onRotateContent: (() -> Void)?
+    var onMenuBarAutoHideToggle: (() -> Void)?
 
     private var hotkeyRefs: [EventHotKeyRef] = []
     private var eventHandler: EventHandlerRef?
@@ -18,6 +19,7 @@ final class HotkeyManager {
         case sizeUp = 3
         case sizeDown = 4
         case rotateContent = 5
+        case menuBarAutoHide = 6
     }
 
     func register() {
@@ -41,6 +43,7 @@ final class HotkeyManager {
                 case .sizeUp: manager.onSizeUp?()
                 case .sizeDown: manager.onSizeDown?()
                 case .rotateContent: manager.onRotateContent?()
+                case .menuBarAutoHide: manager.onMenuBarAutoHideToggle?()
                 case nil: break
                 }
             }
@@ -59,6 +62,7 @@ final class HotkeyManager {
             (.sizeUp, settings.sizeUpHotkey),
             (.sizeDown, settings.sizeDownHotkey),
             (.rotateContent, settings.rotateContentHotkey),
+            (.menuBarAutoHide, settings.menuBarAutoHideHotkey),
         ]
 
         for (id, hotkeyString) in hotkeys {

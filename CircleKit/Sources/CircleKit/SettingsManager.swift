@@ -68,6 +68,9 @@ public final class SettingsManager: ObservableObject {
     @Published public var rotateContentHotkey: String {
         didSet { defaults.set(rotateContentHotkey, forKey: "rotateContentHotkey"); notify() }
     }
+    @Published public var menuBarAutoHideHotkey: String {
+        didSet { defaults.set(menuBarAutoHideHotkey, forKey: "menuBarAutoHideHotkey"); notify() }
+    }
     @Published public var launchAtLogin: Bool {
         didSet { defaults.set(launchAtLogin, forKey: "launchAtLogin"); notify() }
     }
@@ -123,6 +126,7 @@ public final class SettingsManager: ObservableObject {
             "sizeUpHotkey": "cmd+opt+=",
             "sizeDownHotkey": "cmd+opt+-",
             "rotateContentHotkey": "cmd+opt+r",
+            "menuBarAutoHideHotkey": "cmd+opt+m",
             "launchAtLogin": false,
             "contentRotationEnabled": true,
             "contentRotationInterval": 10,
@@ -152,6 +156,7 @@ public final class SettingsManager: ObservableObject {
         self.sizeUpHotkey = defaults.string(forKey: "sizeUpHotkey") ?? "cmd+opt+="
         self.sizeDownHotkey = defaults.string(forKey: "sizeDownHotkey") ?? "cmd+opt+-"
         self.rotateContentHotkey = defaults.string(forKey: "rotateContentHotkey") ?? "cmd+opt+r"
+        self.menuBarAutoHideHotkey = defaults.string(forKey: "menuBarAutoHideHotkey") ?? "cmd+opt+m"
         self.launchAtLogin = defaults.bool(forKey: "launchAtLogin")
         self.contentRotationEnabled = defaults.bool(forKey: "contentRotationEnabled")
         self.contentRotationInterval = defaults.integer(forKey: "contentRotationInterval")
