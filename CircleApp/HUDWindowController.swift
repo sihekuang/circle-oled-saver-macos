@@ -7,6 +7,12 @@ final class HUDController {
     private let hud = HUDManager.shared
     private let segmentCount = 16
 
+    // MacHUD 0.5.2 has a debug assert in its fade-out path that fires when
+    // displayAlert is called again while a prior alert is still dismissing.
+    // Coalesce rapid-fire calls so at most one HUD flight is in progress.
+    private let minInterval: TimeInterval = 0.2
+    private var lastShownAt: Date = .distantPast
+
     func showAlwaysOnToggle(isOn: Bool) {
         let iconName = isOn ? "moon.fill" : "moon"
         show(.imageAndText(
@@ -57,6 +63,10 @@ final class HUDController {
     }
 
     private func show(_ content: ProminentHUDStyle.AlertContent) {
+        dispatchPrecondition(condition: .onQueue(.main))
+        let now = Date()
+        guard now.timeIntervalSince(lastShownAt) >= minInterval else { return }
+        lastShownAt = now
         Task { @HUDManager in
             await hud.displayAlert(style: .prominent(), content: content)
         }
