@@ -18,6 +18,37 @@ A bouncing circle screensaver for macOS, designed for OLED displays. Ships as bo
 
 ---
 
+## Getting Started
+
+### Requirements
+
+- macOS 14.0+
+- Xcode 15.0+
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
+
+### Build & Run
+
+```bash
+git clone https://github.com/sihekuang/oled-saver-macos.git
+cd oled-saver-macos
+xcodegen generate
+open CircleOLEDSaver.xcodeproj
+```
+
+Select the **CircleApp** scheme and run. The app appears in the menu bar (no dock icon).
+
+### Install the Screen Saver
+
+Build the **CircleSaver** scheme, then double-click the `.saver` bundle in `DerivedData` to install it into System Settings > Screen Saver.
+
+### Running Tests
+
+```bash
+cd CircleKit && swift test
+```
+
+---
+
 ## Architecture
 
 The project is split into three targets. `CircleKit` is the shared Swift Package that contains all rendering logic. Both `CircleApp` and `CircleSaver` are thin shells that hand off to `CircleKit`.
@@ -86,3 +117,13 @@ Each display frame follows this path:
 4. **Opacity** — `BallPhysics.proximityOpacity` computes a 0–1 fade factor based on cursor distance; multiplied with the base opacity setting to get `finalOpacity`
 5. **Appearance** — `theme.updateAppearance(position:size:hue:opacity:)` repositions and recolors all `CALayer`s (animations disabled via `CATransaction`)
 6. **Content** — `theme.setContent(_:)` pushes the latest `ContentData` from the active provider into the text layers
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+
+## License
+
+[MIT](LICENSE)
