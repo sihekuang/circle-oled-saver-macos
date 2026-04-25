@@ -50,6 +50,12 @@ public final class SettingsManager: ObservableObject {
     @Published public var proximityFadeRadius: Int {
         didSet { defaults.set(proximityFadeRadius, forKey: "proximityFadeRadius"); notify() }
     }
+    @Published public var proximityFadeMode: BallSizeMode {
+        didSet { defaults.set(proximityFadeMode.rawValue, forKey: "proximityFadeMode"); notify() }
+    }
+    @Published public var proximityFadeRadiusPercent: Int {
+        didSet { defaults.set(proximityFadeRadiusPercent, forKey: "proximityFadeRadiusPercent"); notify() }
+    }
     @Published public var alwaysOnMode: Bool {
         didSet { defaults.set(alwaysOnMode, forKey: "alwaysOnMode"); notify() }
     }
@@ -120,6 +126,8 @@ public final class SettingsManager: ObservableObject {
             "theme": "minimal",
             "proximityFadeEnabled": true,
             "proximityFadeRadius": 150,
+            "proximityFadeMode": "pixels",
+            "proximityFadeRadiusPercent": 10,
             "alwaysOnMode": false,
             "alwaysOnHotkey": "cmd+opt+o",
             "enableHotkey": "cmd+opt+e",
@@ -150,6 +158,8 @@ public final class SettingsManager: ObservableObject {
         self.theme = ThemeID(rawValue: defaults.string(forKey: "theme") ?? "minimal") ?? .minimal
         self.proximityFadeEnabled = defaults.bool(forKey: "proximityFadeEnabled")
         self.proximityFadeRadius = defaults.integer(forKey: "proximityFadeRadius")
+        self.proximityFadeMode = BallSizeMode(rawValue: defaults.string(forKey: "proximityFadeMode") ?? "pixels") ?? .pixels
+        self.proximityFadeRadiusPercent = defaults.integer(forKey: "proximityFadeRadiusPercent")
         self.alwaysOnMode = defaults.bool(forKey: "alwaysOnMode")
         self.alwaysOnHotkey = defaults.string(forKey: "alwaysOnHotkey") ?? "cmd+opt+o"
         self.enableHotkey = defaults.string(forKey: "enableHotkey") ?? "cmd+opt+e"

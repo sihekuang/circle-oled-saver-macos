@@ -125,10 +125,13 @@ public enum BallPhysics {
         let distFromCenter = sqrt(dx * dx + dy * dy)
         let distFromEdge = distFromCenter - ball.radius
 
+        // Fade reaches 0 at innerCutoff (30% of fadeRadius), not at the ball edge,
+        // so the ball goes invisible well before the cursor gets close.
+        let innerCutoff = fadeRadius * 0.3
         if distFromEdge >= fadeRadius { return 1.0 }
-        if distFromEdge <= 0 { return 0.0 }
+        if distFromEdge <= innerCutoff { return 0.0 }
 
-        let linear = distFromEdge / fadeRadius
+        let linear = (distFromEdge - innerCutoff) / (fadeRadius - innerCutoff)
         return linear * linear  // Quadratic fade
     }
 }

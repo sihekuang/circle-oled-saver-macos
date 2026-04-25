@@ -142,10 +142,19 @@ public final class CircleRenderer {
 
         // Calculate opacity
         let baseOpacity = CGFloat(settings.ballOpacity) / 100.0
+        let fadeRadiusPx: CGFloat = {
+            switch settings.proximityFadeMode {
+            case .pixels:
+                return CGFloat(settings.proximityFadeRadius)
+            case .percentage:
+                let minDim = min(bounds.width, bounds.height)
+                return minDim * CGFloat(settings.proximityFadeRadiusPercent) / 100.0
+            }
+        }()
         let proximityOpacity = BallPhysics.proximityOpacity(
             ball: ball,
             cursorPosition: cursorPosition,
-            fadeRadius: CGFloat(settings.proximityFadeRadius),
+            fadeRadius: fadeRadiusPx,
             fadeEnabled: settings.proximityFadeEnabled
         )
         let finalOpacity = baseOpacity * proximityOpacity

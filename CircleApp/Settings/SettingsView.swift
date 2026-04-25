@@ -265,19 +265,145 @@ private struct AppearancePageContent: View {
         }
 
         SettingsSection("Proximity Fade") {
+            Text("Fades the ball out as your cursor approaches it, so it gets out of your way. The fade starts when the cursor enters the fade radius and reaches fully invisible before the cursor touches the ball.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            ProximityFadeDiagram()
+                .padding(.vertical, 4)
+
             Toggle("Enabled", isOn: $settings.proximityFadeEnabled)
 
             if settings.proximityFadeEnabled {
-                LabeledSlider(
-                    label: "Fade Radius",
-                    value: Binding(
-                        get: { Double(settings.proximityFadeRadius) },
-                        set: { settings.proximityFadeRadius = Int($0) }
-                    ),
-                    range: 50...500,
-                    suffix: "px",
-                    valueWidth: 55
+                HStack(spacing: 12) {
+                    Text("Radius Mode")
+                        .frame(width: 90, alignment: .leading)
+                    Picker("", selection: $settings.proximityFadeMode) {
+                        Text("Percentage").tag(BallSizeMode.percentage)
+                        Text("Pixels").tag(BallSizeMode.pixels)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: 200)
+                }
+
+                if settings.proximityFadeMode == .percentage {
+                    LabeledSlider(
+                        label: "Fade Radius",
+                        value: Binding(
+                            get: { Double(settings.proximityFadeRadiusPercent) },
+                            set: { settings.proximityFadeRadiusPercent = Int($0) }
+                        ),
+                        range: 5...100,
+                        suffix: "%",
+                        valueWidth: 55
+                    )
+                } else {
+                    LabeledSlider(
+                        label: "Fade Radius",
+                        value: Binding(
+                            get: { Double(settings.proximityFadeRadius) },
+                            set: { settings.proximityFadeRadius = Int($0) }
+                        ),
+                        range: 50...1500,
+                        suffix: "px",
+                        valueWidth: 55
+                    )
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Proximity Fade Diagram
+
+private struct ProximityFadeDiagram: View {
+    private let ballRadius: CGFloat = 14
+    private let fadeRadius: CGFloat = 64
+    private var cutoff: CGFloat { fadeRadius * 0.3 }
+
+    var body: some View {
+        HStack(spacing: 16) {
+            Canvas { context, size in
+                let center = CGPoint(x: size.width / 2, y: size.height / 2)
+
+                // Outer fade boundary (where fading starts)
+                let outerRect = CGRect(
+                    x: center.x - ballRadius - fadeRadius,
+                    y: center.y - ballRadius - fadeRadius,
+                    width: 2 * (ballRadius + fadeRadius),
+                    height: 2 * (ballRadius + fadeRadius)
                 )
+                context.fill(Path(ellipseIn: outerRect), with: .color(.orange.opacity(0.15)))
+                context.stroke(
+                    Path(ellipseIn: outerRect),
+                    with: .color(.orange.opacity(0.6)),
+                    style: StrokeStyle(lineWidth: 1, dash: [3, 3])
+                )
+
+                // Inner cutoff boundary (fully invisible inside this)
+                let innerRect = CGRect(
+                    x: center.x - ballRadius - cutoff,
+                    y: center.y - ballRadius - cutoff,
+                    width: 2 * (ballRadius + cutoff),
+                    height: 2 * (ballRadius + cutoff)
+                )
+                context.fill(Path(ellipseIn: innerRect), with: .color(.red.opacity(0.18)))
+                context.stroke(
+                    Path(ellipseIn: innerRect),
+                    with: .color(.red.opacity(0.6)),
+                    style: StrokeStyle(lineWidth: 1, dash: [3, 3])
+                )
+
+                // Ball
+                let ballRect = CGRect(
+                    x: center.x - ballRadius,
+                    y: center.y - ballRadius,
+                    width: 2 * ballRadius,
+                    height: 2 * ballRadius
+                )
+                context.fill(Path(ellipseIn: ballRect), with: .color(.white.opacity(0.85)))
+
+                // Cursor (at right edge, inside fade zone)
+                let cursorPos = CGPoint(x: center.x + ballRadius + cutoff + 12, y: center.y)
+                let arrow = Path { p in
+                    p.move(to: cursorPos)
+                    p.addLine(to: CGPoint(x: cursorPos.x + 8, y: cursorPos.y + 4))
+                    p.addLine(to: CGPoint(x: cursorPos.x + 4, y: cursorPos.y + 4))
+                    p.addLine(to: CGPoint(x: cursorPos.x + 6, y: cursorPos.y + 10))
+                    p.addLine(to: CGPoint(x: cursorPos.x + 4, y: cursorPos.y + 11))
+                    p.addLine(to: CGPoint(x: cursorPos.x + 2, y: cursorPos.y + 5))
+                    p.addLine(to: CGPoint(x: cursorPos.x - 1, y: cursorPos.y + 8))
+                    p.closeSubpath()
+                }
+                context.fill(arrow, with: .color(.white.opacity(0.9)))
+            }
+            .frame(width: 200, height: 160)
+            .background(Color.black.opacity(0.85))
+            .cornerRadius(6)
+
+            VStack(alignment: .leading, spacing: 8) {
+                LegendRow(color: .white.opacity(0.85), title: "Ball", subtitle: "Always invisible if cursor enters")
+                LegendRow(color: .red.opacity(0.6), title: "Invisible zone", subtitle: "Inner 30% of fade radius")
+                LegendRow(color: .orange.opacity(0.6), title: "Fading zone", subtitle: "Quadratic falloff to 0")
+                LegendRow(color: .gray.opacity(0.4), title: "Outside fade radius", subtitle: "Fully visible")
+            }
+            .font(.caption2)
+        }
+    }
+}
+
+private struct LegendRow: View {
+    let color: Color
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 6) {
+            Circle().fill(color).frame(width: 8, height: 8).padding(.top, 3)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title).fontWeight(.medium)
+                Text(subtitle).foregroundColor(.secondary)
             }
         }
     }
