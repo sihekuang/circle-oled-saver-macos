@@ -10,6 +10,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private let settings = SettingsManager.shared
     private let hud = HUDController.shared
 
+    // Snapshot of settings that require expensive side-effects when they change.
+    // Compared against current values in handleSettingsChanged() to avoid
+    // tearing down overlays / re-registering hotkeys on every slider tick.
+    private var lastOLEDDisplayIDs: Set<String> = []
+    private var lastHotkeySnapshot: [String] = []
+    private var lastEnabled = true
+    private var lastLaunchAtLogin = false
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("[Circle] applicationDidFinishLaunching called")
         print("[Circle] Bundle ID: \(Bundle.main.bundleIdentifier ?? "nil")")
@@ -92,6 +100,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         hotkeyManager.register()
+
+        // Initialize change-tracking snapshot
+        lastOLEDDisplayIDs = settings.oledDisplayIDs
+        lastHotkeySnapshot = currentHotkeySnapshot()
+        lastEnabled = settings.enabled
+        lastLaunchAtLogin = settings.launchAtLogin
 
         // Restore always-on state
         if settings.alwaysOnMode {
@@ -195,17 +209,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Settings Changes
 
     @objc private func handleSettingsChanged() {
-        updateLoginItem()
         trayManager.updateMenu()
-        hotkeyManager.register()
 
-        if !settings.enabled {
+        if settings.launchAtLogin != lastLaunchAtLogin {
+            updateLoginItem()
+            lastLaunchAtLogin = settings.launchAtLogin
+        }
+
+        let hotkeySnapshot = currentHotkeySnapshot()
+        if hotkeySnapshot != lastHotkeySnapshot {
+            hotkeyManager.register()
+            lastHotkeySnapshot = hotkeySnapshot
+        }
+
+        let enabledChanged = settings.enabled != lastEnabled
+        let displaysChanged = settings.oledDisplayIDs != lastOLEDDisplayIDs
+        lastEnabled = settings.enabled
+        lastOLEDDisplayIDs = settings.oledDisplayIDs
+
+        if enabledChanged && !settings.enabled {
             dismissOverlays()
-        } else if settings.alwaysOnMode || overlayController != nil {
-            // Recreate overlays to reflect any display selection changes
+        } else if displaysChanged, settings.alwaysOnMode || overlayController != nil {
+            // Display selection changed — recreate overlays to attach to the new set.
             dismissOverlays()
             showOverlays()
         }
+        // Other settings (proximity fade, opacity, speed, theme, content) are read
+        // live by CircleRenderer each frame, so no overlay recreation is needed.
+    }
+
+    private func currentHotkeySnapshot() -> [String] {
+        [
+            settings.alwaysOnHotkey,
+            settings.enableHotkey,
+            settings.sizeUpHotkey,
+            settings.sizeDownHotkey,
+            settings.rotateContentHotkey,
+            settings.menuBarAutoHideHotkey,
+        ]
     }
 
     private func updateLoginItem() {
