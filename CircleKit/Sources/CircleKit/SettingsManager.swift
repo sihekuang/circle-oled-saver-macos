@@ -16,7 +16,7 @@ public final class SettingsManager: ObservableObject {
     public static let shared = SettingsManager()
 
     private let defaults: UserDefaults
-    public static let suiteName = "com.danielkurin.circle.shared"
+    public static let suiteName = "com.shoebillsoft.circle.shared"
 
     // Notification posted when any setting changes
     public static let settingsChangedNotification = Notification.Name("CircleSettingsChanged")

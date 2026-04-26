@@ -3,7 +3,7 @@
 Menu bar application (AppKit + SwiftUI hybrid). No dock icon (`LSUIElement: true`).
 
 **Path**: `CircleApp/`
-**Bundle ID**: `com.danielkurin.circle`
+**Bundle ID**: `com.shoebillsoft.circle`
 
 ## Entry Point
 

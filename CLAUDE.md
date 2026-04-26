@@ -40,7 +40,7 @@ CircleKit (Swift Package — shared rendering, physics, themes, content, setting
 - Settings changes propagate via `NotificationCenter` (`settingsChangedNotification`), not bindings
 - `CVDisplayLink` callback dispatches to main thread — all `CALayer` work is main-thread only
 - Hotkey presses trigger `IdleMonitor.suppressDismissal()` to prevent the keypress itself from dismissing the overlay
-- Both targets share UserDefaults suite `com.danielkurin.circle.shared`
+- Both targets share UserDefaults suite `com.shoebillsoft.circle.shared`
 
 ## Build System
 

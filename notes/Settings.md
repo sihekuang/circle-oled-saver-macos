@@ -2,7 +2,7 @@
 
 **File**: `CircleKit/Sources/CircleKit/SettingsManager.swift`
 
-Singleton `SettingsManager.shared` backed by `UserDefaults(suiteName: "com.danielkurin.circle.shared")`. Shared between [[CircleApp]] and [[CircleSaver]].
+Singleton `SettingsManager.shared` backed by `UserDefaults(suiteName: "com.shoebillsoft.circle.shared")`. Shared between [[CircleApp]] and [[CircleSaver]].
 
 Uses `@Published` properties with `didSet` observers that post `settingsChangedNotification`.
 

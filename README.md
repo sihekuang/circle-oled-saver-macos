@@ -103,7 +103,7 @@ Defines the contract all themes implement: `setup`, `tick`, `updateMotion`, `upd
 `ContentProvider` is a protocol for anything that produces a `ContentData` (icon + text string). `BaseContentProvider` handles the timer loop. `ClockProvider` and `SystemInfoProvider` are the built-in implementations. `ContentRotator` owns a list of providers and exposes the currently active one, rotating on a configurable interval.
 
 ### `SettingsManager`
-A singleton `ObservableObject` backed by a shared `UserDefaults` suite (`com.danielkurin.circle.shared`). All settings are `@Published` and post a `settingsChangedNotification` on change so both `CircleApp` and `CircleRenderer` can react without tight coupling.
+A singleton `ObservableObject` backed by a shared `UserDefaults` suite (`com.shoebillsoft.circle.shared`). All settings are `@Published` and post a `settingsChangedNotification` on change so both `CircleApp` and `CircleRenderer` can react without tight coupling.
 
 ---
 

@@ -3,7 +3,7 @@
 macOS Screen Saver bundle (`.saver`), using the system ScreenSaver framework.
 
 **Path**: `CircleSaver/`
-**Bundle ID**: `com.danielkurin.circle.saver`
+**Bundle ID**: `com.shoebillsoft.circle.saver`
 **Principal Class**: `CircleSaver.CircleSaverView`
 
 ## CircleSaverView
@@ -18,7 +18,7 @@ Subclass of `ScreenSaverView`. Thin adapter around [[CircleKit#CircleRenderer|Ci
 
 ## Settings Sharing
 
-Reads from the same `UserDefaults` suite (`com.danielkurin.circle.shared`) as [[CircleApp]]. Configuration is done entirely through the CircleApp's [[Settings]] UI.
+Reads from the same `UserDefaults` suite (`com.shoebillsoft.circle.shared`) as [[CircleApp]]. Configuration is done entirely through the CircleApp's [[Settings]] UI.
 
 ## See Also
 
