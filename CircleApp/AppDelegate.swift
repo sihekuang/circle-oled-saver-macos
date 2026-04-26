@@ -17,6 +17,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var lastHotkeySnapshot: [String] = []
     private var lastEnabled = true
     private var lastLaunchAtLogin = false
+    private var lastAlwaysOnMode = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         print("[Circle] applicationDidFinishLaunching called")
@@ -106,6 +107,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         lastHotkeySnapshot = currentHotkeySnapshot()
         lastEnabled = settings.enabled
         lastLaunchAtLogin = settings.launchAtLogin
+        lastAlwaysOnMode = settings.alwaysOnMode
 
         // Restore always-on state
         if settings.alwaysOnMode {
@@ -154,16 +156,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Always On
 
     private func toggleAlwaysOn() {
+        // Side effects (idle monitor + overlays) are applied uniformly in
+        // handleSettingsChanged() so the Settings checkbox path also works.
         settings.alwaysOnMode.toggle()
-        trayManager.updateMenu()
-
-        if settings.alwaysOnMode {
-            idleMonitor.stop()
-            showOverlays()
-        } else {
-            dismissOverlays()
-            idleMonitor.start()
-        }
     }
 
     // MARK: - Menu Bar Auto-Hide
@@ -224,10 +219,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let enabledChanged = settings.enabled != lastEnabled
         let displaysChanged = settings.oledDisplayIDs != lastOLEDDisplayIDs
+        let alwaysOnChanged = settings.alwaysOnMode != lastAlwaysOnMode
         lastEnabled = settings.enabled
         lastOLEDDisplayIDs = settings.oledDisplayIDs
+        lastAlwaysOnMode = settings.alwaysOnMode
 
-        if enabledChanged && !settings.enabled {
+        if alwaysOnChanged {
+            if settings.alwaysOnMode {
+                idleMonitor.stop()
+                showOverlays()
+            } else {
+                dismissOverlays()
+                idleMonitor.start()
+            }
+        } else if enabledChanged && !settings.enabled {
             dismissOverlays()
         } else if displaysChanged, settings.alwaysOnMode || overlayController != nil {
             // Display selection changed — recreate overlays to attach to the new set.
