@@ -1,6 +1,6 @@
 name: CircleOLEDSaver
 options:
-  bundleIdPrefix: com.danielkurin.circle
+  bundleIdPrefix: com.shoebillsoft.circle
   deploymentTarget:
     macOS: "14.0"
   xcodeVersion: "15.0"
@@ -29,7 +29,7 @@ targets:
       - package: MacHUD
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.danielkurin.circle
+        PRODUCT_BUNDLE_IDENTIFIER: com.shoebillsoft.circle
         INFOPLIST_FILE: CircleApp/Info.plist
         CODE_SIGN_ENTITLEMENTS: CircleApp/CircleApp.entitlements
         PRODUCT_NAME: Circle
@@ -45,7 +45,7 @@ targets:
       - package: CircleKit
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.danielkurin.circle.saver
+        PRODUCT_BUNDLE_IDENTIFIER: com.shoebillsoft.circle.saver
         INFOPLIST_FILE: CircleSaver/Info.plist
         PRODUCT_NAME: Circle
         WRAPPER_EXTENSION: saver
