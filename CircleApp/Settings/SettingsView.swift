@@ -275,39 +275,39 @@ private struct AppearancePageContent: View {
 
             Toggle("Enabled", isOn: $settings.proximityFadeEnabled)
 
-            if settings.proximityFadeEnabled {
-                HStack(spacing: 12) {
-                    Text("Radius Mode")
-                        .frame(width: 90, alignment: .leading)
-                    Picker("", selection: $settings.proximityFadeMode) {
-                        Text("Percentage").tag(BallSizeMode.percentage)
-                        Text("Pixels").tag(BallSizeMode.pixels)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 200)
+            HStack(spacing: 12) {
+                Text("Radius Mode")
+                    .frame(width: 90, alignment: .leading)
+                Picker("", selection: $settings.proximityFadeMode) {
+                    Text("Percentage").tag(BallSizeMode.percentage)
+                    Text("Pixels").tag(BallSizeMode.pixels)
                 }
-
-                LabeledSlider(
-                    label: "Fade Radius",
-                    value: Binding(
-                        get: {
-                            settings.proximityFadeMode == .percentage
-                                ? Double(settings.proximityFadeRadiusPercent)
-                                : Double(settings.proximityFadeRadius)
-                        },
-                        set: { newValue in
-                            if settings.proximityFadeMode == .percentage {
-                                settings.proximityFadeRadiusPercent = Int(newValue)
-                            } else {
-                                settings.proximityFadeRadius = Int(newValue)
-                            }
-                        }
-                    ),
-                    range: settings.proximityFadeMode == .percentage ? 5...100 : 50...1500,
-                    suffix: settings.proximityFadeMode == .percentage ? "%" : "px",
-                    valueWidth: 55
-                )
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 200)
             }
+            .disabled(!settings.proximityFadeEnabled)
+
+            LabeledSlider(
+                label: "Fade Radius",
+                value: Binding(
+                    get: {
+                        settings.proximityFadeMode == .percentage
+                            ? Double(settings.proximityFadeRadiusPercent)
+                            : Double(settings.proximityFadeRadius)
+                    },
+                    set: { newValue in
+                        if settings.proximityFadeMode == .percentage {
+                            settings.proximityFadeRadiusPercent = Int(newValue)
+                        } else {
+                            settings.proximityFadeRadius = Int(newValue)
+                        }
+                    }
+                ),
+                range: settings.proximityFadeMode == .percentage ? 5...100 : 50...1500,
+                suffix: settings.proximityFadeMode == .percentage ? "%" : "px",
+                valueWidth: 55
+            )
+            .disabled(!settings.proximityFadeEnabled)
         }
     }
 }
@@ -415,19 +415,18 @@ private struct ContentPageContent: View {
         SettingsSection("Rotation") {
             Toggle("Auto-rotate content", isOn: $settings.contentRotationEnabled)
 
-            if settings.contentRotationEnabled {
-                LabeledSlider(
-                    label: "Interval",
-                    value: Binding(
-                        get: { Double(settings.contentRotationInterval) },
-                        set: { settings.contentRotationInterval = Int($0) }
-                    ),
-                    range: 5...60,
-                    step: 5,
-                    suffix: "s",
-                    valueWidth: 40
-                )
-            }
+            LabeledSlider(
+                label: "Interval",
+                value: Binding(
+                    get: { Double(settings.contentRotationInterval) },
+                    set: { settings.contentRotationInterval = Int($0) }
+                ),
+                range: 5...60,
+                step: 5,
+                suffix: "s",
+                valueWidth: 40
+            )
+            .disabled(!settings.contentRotationEnabled)
         }
 
         SettingsSection("Clock") {
@@ -449,27 +448,27 @@ private struct ContentPageContent: View {
         SettingsSection("Stocks") {
             Toggle("Show Stocks", isOn: $settings.stockEnabled)
 
-            if settings.stockEnabled {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Symbols (comma-separated)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    TextField("AAPL, GOOGL, TSLA", text: $settings.stockSymbols)
-                        .textFieldStyle(.roundedBorder)
-                }
-
-                LabeledSlider(
-                    label: "Refresh",
-                    value: Binding(
-                        get: { Double(settings.stockRefreshSeconds) },
-                        set: { settings.stockRefreshSeconds = Int($0) }
-                    ),
-                    range: 60...600,
-                    step: 30,
-                    suffix: "s",
-                    valueWidth: 50
-                )
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Symbols (comma-separated)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                TextField("AAPL, GOOGL, TSLA", text: $settings.stockSymbols)
+                    .textFieldStyle(.roundedBorder)
             }
+            .disabled(!settings.stockEnabled)
+
+            LabeledSlider(
+                label: "Refresh",
+                value: Binding(
+                    get: { Double(settings.stockRefreshSeconds) },
+                    set: { settings.stockRefreshSeconds = Int($0) }
+                ),
+                range: 60...600,
+                step: 30,
+                suffix: "s",
+                valueWidth: 50
+            )
+            .disabled(!settings.stockEnabled)
         }
     }
 }
