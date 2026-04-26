@@ -3,7 +3,7 @@ import CircleKit
 
 final class CircleOverlayView: NSView {
     private var renderer: CircleRenderer?
-    private var mouseMonitor: Any?
+    private var cursorPollTimer: Timer?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -24,8 +24,11 @@ final class CircleOverlayView: NSView {
         )
         renderer?.start()
 
-        // Track mouse for proximity fade
-        mouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] event in
+        // Poll cursor position. NSEvent.addGlobalMonitorForEvents only fires for
+        // events going to *other* apps, so it stops updating when our own app
+        // becomes frontmost (e.g., when Settings is open) — freezing the
+        // proximity fade. NSEvent.mouseLocation works regardless of focus.
+        cursorPollTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
             guard let self, let screen = self.window?.screen else { return }
             let screenPoint = NSEvent.mouseLocation
             let windowPoint = CGPoint(
@@ -39,9 +42,7 @@ final class CircleOverlayView: NSView {
     func stopAnimation() {
         renderer?.stop()
         renderer = nil
-        if let mouseMonitor {
-            NSEvent.removeMonitor(mouseMonitor)
-        }
-        mouseMonitor = nil
+        cursorPollTimer?.invalidate()
+        cursorPollTimer = nil
     }
 }
