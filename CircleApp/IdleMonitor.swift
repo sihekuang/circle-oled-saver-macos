@@ -7,7 +7,7 @@ final class IdleMonitor {
     var onActive: (() -> Void)?
 
     private var timer: Timer?
-    private var isScreensaverActive = false
+    private(set) var isScreensaverActive = false
     private let pollInterval: TimeInterval = 1.0
     private var activity: NSObjectProtocol?
     private var suppressUntil: Date = .distantPast

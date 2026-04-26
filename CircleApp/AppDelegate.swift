@@ -264,11 +264,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Display Changes
 
     @objc private func displaysChanged() {
-        guard settings.alwaysOnMode, overlayController != nil else { return }
+        guard overlayController != nil else { return }
         dismissOverlays()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self, self.settings.alwaysOnMode else { return }
-            self.showOverlays()
+            guard let self else { return }
+            if self.settings.alwaysOnMode || self.idleMonitor.isScreensaverActive {
+                self.showOverlays()
+            }
         }
     }
 
