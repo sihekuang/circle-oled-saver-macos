@@ -287,29 +287,26 @@ private struct AppearancePageContent: View {
                     .frame(maxWidth: 200)
                 }
 
-                if settings.proximityFadeMode == .percentage {
-                    LabeledSlider(
-                        label: "Fade Radius",
-                        value: Binding(
-                            get: { Double(settings.proximityFadeRadiusPercent) },
-                            set: { settings.proximityFadeRadiusPercent = Int($0) }
-                        ),
-                        range: 5...100,
-                        suffix: "%",
-                        valueWidth: 55
-                    )
-                } else {
-                    LabeledSlider(
-                        label: "Fade Radius",
-                        value: Binding(
-                            get: { Double(settings.proximityFadeRadius) },
-                            set: { settings.proximityFadeRadius = Int($0) }
-                        ),
-                        range: 50...1500,
-                        suffix: "px",
-                        valueWidth: 55
-                    )
-                }
+                LabeledSlider(
+                    label: "Fade Radius",
+                    value: Binding(
+                        get: {
+                            settings.proximityFadeMode == .percentage
+                                ? Double(settings.proximityFadeRadiusPercent)
+                                : Double(settings.proximityFadeRadius)
+                        },
+                        set: { newValue in
+                            if settings.proximityFadeMode == .percentage {
+                                settings.proximityFadeRadiusPercent = Int(newValue)
+                            } else {
+                                settings.proximityFadeRadius = Int(newValue)
+                            }
+                        }
+                    ),
+                    range: settings.proximityFadeMode == .percentage ? 5...100 : 50...1500,
+                    suffix: settings.proximityFadeMode == .percentage ? "%" : "px",
+                    valueWidth: 55
+                )
             }
         }
     }
