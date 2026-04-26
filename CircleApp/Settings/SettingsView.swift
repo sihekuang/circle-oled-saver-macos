@@ -73,7 +73,10 @@ struct SettingsView: View {
             // Detail
             DetailView(page: selectedPage)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(VisualEffectBackground(material: .sidebar, blendingMode: .behindWindow))
+                .background(
+                    VisualEffectBackground(material: .sidebar, blendingMode: .behindWindow)
+                        .ignoresSafeArea()
+                )
         }
         .frame(minWidth: 720, minHeight: 520)
     }
