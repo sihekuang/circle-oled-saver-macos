@@ -42,7 +42,7 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         let totals = aggregate(weekPrefixes: weekPrefixes, todayPrefix: todayPrefix, now: now)
 
         guard weeklyGoalTokens > 0 else {
-            cachedData = ContentData(icon: "\u{2728}", text: "Set goal\nin Settings")
+            cachedData = ContentData(icon: "\u{2728}", text: "Claude\nset goal")
             return
         }
 
@@ -51,10 +51,10 @@ public final class ClaudeUsageProvider: BaseContentProvider {
             // Today's tokens vs the daily share of the weekly goal.
             let dailyTarget = Double(weeklyGoalTokens) / 7
             let pct = Int((Double(totals.today) / dailyTarget) * 100)
-            cachedData = ContentData(icon: "\u{2728}", text: "\(pct)%\ntoday")
+            cachedData = ContentData(icon: "\u{2728}", text: "Claude\n\(pct)% today")
         case .week:
             let pct = Int((Double(totals.week) / Double(weeklyGoalTokens)) * 100)
-            cachedData = ContentData(icon: "\u{2728}", text: "\(pct)%\nweek")
+            cachedData = ContentData(icon: "\u{2728}", text: "Claude\n\(pct)% week")
         }
     }
 

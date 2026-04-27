@@ -31,14 +31,14 @@ final class ClaudeUsageProviderTests: XCTestCase {
             weeklyGoalTokens: testWeeklyGoal
         )
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "0%\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today")
     }
 
     func testNoJSONLFiles() async throws {
         try makeProject("empty")
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "0%\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today")
     }
 
     func testIgnoresMalformedLines() async throws {
@@ -51,7 +51,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // Active = 100 + 100 + 50 = 250 (cacheRead excluded). Daily share = 1000. -> 25%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "25%\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today")
     }
 
     func testTodayWithoutGoalShowsHint() async throws {
@@ -65,7 +65,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
             weeklyGoalTokens: 0
         )
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Set goal\nin Settings")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\nset goal")
     }
 
     func testWeekWithoutGoalShowsHint() async throws {
@@ -79,7 +79,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
             weeklyGoalTokens: 0
         )
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Set goal\nin Settings")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\nset goal")
     }
 
     // MARK: - Today percentage
@@ -91,7 +91,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // 250 / 1000 = 25%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "25%\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today")
     }
 
     func testTodayExactly100() async throws {
@@ -101,7 +101,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // 1000 / 1000 = 100%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "100%\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n100% today")
     }
 
     func testTodayAbove100() async throws {
@@ -111,7 +111,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // 2500 / 1000 = 250%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "250%\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n250% today")
     }
 
     func testTodaySumsAcrossProjectsAndFiles() async throws {
@@ -127,7 +127,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // 200 + 300 + 500 = 1000 -> 100%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "100%\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n100% today")
     }
 
     func testCacheReadsAreExcluded() async throws {
@@ -139,7 +139,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // 250 / 1000 = 25% (cacheRead ignored)
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "25%\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today")
     }
 
     func testTodayIgnoresOtherDates() async throws {
@@ -149,7 +149,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         ])
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "0%\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today")
     }
 
     func testTodayIgnoresNonAssistantEntries() async throws {
@@ -161,7 +161,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // Only the assistant line counts: 250 / 1000 = 25%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "25%\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today")
     }
 
     // MARK: - Week percentage
@@ -173,7 +173,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // 1750 / 7000 = 25%
         let provider = makeProvider(date: "2026-04-26", mode: .week)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "25%\nweek")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% week")
     }
 
     func testWeekAbove100() async throws {
@@ -183,7 +183,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // 10500 / 7000 = 150%
         let provider = makeProvider(date: "2026-04-26", mode: .week)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "150%\nweek")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n150% week")
     }
 
     func testWeekSumsLast7Days() async throws {
@@ -203,7 +203,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // 3000 / 7000 = 42% (truncates from 42.85%)
         let provider = makeProvider(date: "2026-04-26", mode: .week)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "42%\nweek")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n42% week")
     }
 
     // MARK: - Icon
