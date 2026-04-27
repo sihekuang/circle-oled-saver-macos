@@ -485,7 +485,6 @@ private struct ContentPageContent: View {
                 Picker("", selection: $settings.claudeUsageMode) {
                     Text("Today").tag(ClaudeUsageMode.today)
                     Text("This Week").tag(ClaudeUsageMode.week)
-                    Text("% of Goal").tag(ClaudeUsageMode.percentOfWeekly)
                 }
                 .pickerStyle(.segmented)
             }
@@ -502,7 +501,7 @@ private struct ContentPageContent: View {
                 suffix: "M",
                 valueWidth: 60
             )
-            .disabled(!settings.claudeUsageEnabled || settings.claudeUsageMode != .percentOfWeekly)
+            .disabled(!settings.claudeUsageEnabled)
         }
     }
 }

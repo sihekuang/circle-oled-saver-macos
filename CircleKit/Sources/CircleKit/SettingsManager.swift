@@ -15,7 +15,6 @@ public enum ThemeID: String, CaseIterable, Codable {
 public enum ClaudeUsageMode: String, CaseIterable, Codable {
     case today
     case week
-    case percentOfWeekly
 }
 
 public final class SettingsManager: ObservableObject {

@@ -41,18 +41,20 @@ public final class ClaudeUsageProvider: BaseContentProvider {
 
         let totals = aggregate(weekPrefixes: weekPrefixes, todayPrefix: todayPrefix, now: now)
 
+        guard weeklyGoalTokens > 0 else {
+            cachedData = ContentData(icon: "\u{2728}", text: "Set goal\nin Settings")
+            return
+        }
+
         switch mode {
         case .today:
-            cachedData = ContentData(icon: "\u{2728}", text: "\(formatTokens(totals.today))\ntoday")
+            // Today's tokens vs the daily share of the weekly goal.
+            let dailyTarget = Double(weeklyGoalTokens) / 7
+            let pct = Int((Double(totals.today) / dailyTarget) * 100)
+            cachedData = ContentData(icon: "\u{2728}", text: "\(pct)%\ntoday")
         case .week:
-            cachedData = ContentData(icon: "\u{2728}", text: "\(formatTokens(totals.week))\nweek")
-        case .percentOfWeekly:
-            if weeklyGoalTokens <= 0 {
-                cachedData = ContentData(icon: "\u{2728}", text: "Set goal\nin Settings")
-            } else {
-                let pct = Int((Double(totals.week) / Double(weeklyGoalTokens)) * 100)
-                cachedData = ContentData(icon: "\u{2728}", text: "\(pct)%\nweek")
-            }
+            let pct = Int((Double(totals.week) / Double(weeklyGoalTokens)) * 100)
+            cachedData = ContentData(icon: "\u{2728}", text: "\(pct)%\nweek")
         }
     }
 
@@ -129,17 +131,6 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         return formatter.string(from: date)
     }
 
-    private func formatTokens(_ count: Int) -> String {
-        if count >= 1_000_000_000 {
-            return String(format: "%.1fB", Double(count) / 1_000_000_000)
-        } else if count >= 1_000_000 {
-            return String(format: "%.1fM", Double(count) / 1_000_000)
-        } else if count >= 1_000 {
-            return "\(count / 1_000)K"
-        } else {
-            return "\(count)"
-        }
-    }
 }
 
 private struct JSONLEntry: Decodable {
