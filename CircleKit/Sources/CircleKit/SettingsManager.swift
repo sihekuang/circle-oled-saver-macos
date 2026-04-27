@@ -15,7 +15,6 @@ public enum ThemeID: String, CaseIterable, Codable {
 public enum ClaudeUsageMode: String, CaseIterable, Codable {
     case today
     case week
-    case percentOfWeekly
 }
 
 public final class SettingsManager: ObservableObject {
@@ -86,9 +85,6 @@ public final class SettingsManager: ObservableObject {
     @Published public var launchAtLogin: Bool {
         didSet { defaults.set(launchAtLogin, forKey: "launchAtLogin"); notify() }
     }
-    @Published public var contentRotationEnabled: Bool {
-        didSet { defaults.set(contentRotationEnabled, forKey: "contentRotationEnabled"); notify() }
-    }
     @Published public var contentRotationInterval: Int {
         didSet { defaults.set(contentRotationInterval, forKey: "contentRotationInterval"); notify() }
     }
@@ -151,7 +147,6 @@ public final class SettingsManager: ObservableObject {
             "rotateContentHotkey": "cmd+opt+r",
             "menuBarAutoHideHotkey": "cmd+opt+b",
             "launchAtLogin": false,
-            "contentRotationEnabled": true,
             "contentRotationInterval": 10,
             "clockEnabled": true,
             "clockFormat24h": false,
@@ -186,7 +181,6 @@ public final class SettingsManager: ObservableObject {
         self.rotateContentHotkey = defaults.string(forKey: "rotateContentHotkey") ?? "cmd+opt+r"
         self.menuBarAutoHideHotkey = defaults.string(forKey: "menuBarAutoHideHotkey") ?? "cmd+opt+b"
         self.launchAtLogin = defaults.bool(forKey: "launchAtLogin")
-        self.contentRotationEnabled = defaults.bool(forKey: "contentRotationEnabled")
         self.contentRotationInterval = defaults.integer(forKey: "contentRotationInterval")
         self.clockEnabled = defaults.bool(forKey: "clockEnabled")
         self.clockFormat24h = defaults.bool(forKey: "clockFormat24h")

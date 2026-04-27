@@ -4,6 +4,10 @@ import XCTest
 final class ClaudeUsageProviderTests: XCTestCase {
     private var tempDir: URL!
 
+    /// Goal of 7000 tokens → daily share = 1000 tokens. Gives clean percentages
+    /// in tests (e.g., 250 used = 25%, 1000 = 100%).
+    private let testWeeklyGoal = 7000
+
     override func setUp() {
         super.setUp()
         tempDir = FileManager.default.temporaryDirectory
@@ -24,166 +28,193 @@ final class ClaudeUsageProviderTests: XCTestCase {
             projectsDir: missing,
             clock: fixedClock("2026-04-26"),
             mode: .today,
-            weeklyGoalTokens: 0
+            weeklyGoalTokens: testWeeklyGoal
         )
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "0\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today")
     }
 
     func testNoJSONLFiles() async throws {
         try makeProject("empty")
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "0\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today")
     }
 
     func testIgnoresMalformedLines() async throws {
         try writeSession("p1", "session1", lines: [
             "this is not json",
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 100, output: 200, cacheRead: 300, cacheCreate: 400),
+            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 100, output: 100, cacheRead: 999, cacheCreate: 50),
             "",
             "{ broken: json",
         ])
+        // Active = 100 + 100 + 50 = 250 (cacheRead excluded). Daily share = 1000. -> 25%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "1K\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today")
     }
 
-    // MARK: - Today aggregation
-
-    func testSumsTodayTokensFromOneSession() async throws {
+    func testTodayWithoutGoalShowsHint() async throws {
         try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 1_000, output: 2_000, cacheRead: 500_000, cacheCreate: 1_000),
-        ])
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        // total = 1000 + 2000 + 500000 + 1000 = 504000 -> "504K today"
-        XCTAssertEqual(provider.cachedData?.text, "504K\ntoday")
-    }
-
-    func testSumsAcrossProjectsAndFiles() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T08:00:00Z", input: 0, output: 0, cacheRead: 1_500_000, cacheCreate: 0),
-        ])
-        try writeSession("p1", "session2", lines: [
-            assistantLine(timestamp: "2026-04-26T09:00:00Z", input: 0, output: 0, cacheRead: 2_000_000, cacheCreate: 0),
-        ])
-        try writeSession("p2", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 0, cacheRead: 1_500_000, cacheCreate: 0),
-        ])
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        // 1.5M + 2M + 1.5M = 5M -> "5.0M today"
-        XCTAssertEqual(provider.cachedData?.text, "5.0M\ntoday")
-    }
-
-    func testIgnoresOtherDates() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-25T23:59:59Z", input: 0, output: 0, cacheRead: 999_999_999, cacheCreate: 0),
-            assistantLine(timestamp: "2026-04-27T00:00:00Z", input: 0, output: 0, cacheRead: 999_999_999, cacheCreate: 0),
-        ])
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "0\ntoday")
-    }
-
-    func testIgnoresNonAssistantEntries() async throws {
-        try writeSession("p1", "session1", lines: [
-            #"{"type":"user","timestamp":"2026-04-26T10:00:00Z","message":{"usage":{"input_tokens":999999}}}"#,
-            #"{"type":"system","timestamp":"2026-04-26T10:00:00Z"}"#,
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 1_000, cacheRead: 0, cacheCreate: 0),
-        ])
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "1K\ntoday")
-    }
-
-    // MARK: - Week aggregation
-
-    func testWeekSumsLast7Days() async throws {
-        // 1M today, 1M each for 6 prior days, 1M for day 8 (out of window)
-        try writeSession("p1", "today", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 0, cacheRead: 1_000_000, cacheCreate: 0),
-        ])
-        try writeSession("p1", "yesterday", lines: [
-            assistantLine(timestamp: "2026-04-25T12:00:00Z", input: 0, output: 0, cacheRead: 1_000_000, cacheCreate: 0),
-        ])
-        try writeSession("p1", "sixDaysAgo", lines: [
-            assistantLine(timestamp: "2026-04-20T12:00:00Z", input: 0, output: 0, cacheRead: 1_000_000, cacheCreate: 0),
-        ])
-        try writeSession("p1", "eightDaysAgo", lines: [
-            assistantLine(timestamp: "2026-04-18T12:00:00Z", input: 0, output: 0, cacheRead: 999_999_999, cacheCreate: 0),
-        ])
-        let provider = makeProvider(date: "2026-04-26", mode: .week)
-        await provider.fetchData()
-        // 1M (today) + 1M (yesterday) + 1M (six days ago) = 3M -> "3.0M week"
-        XCTAssertEqual(provider.cachedData?.text, "3.0M\nweek")
-    }
-
-    // MARK: - Percentage of weekly goal
-
-    func testPercentOfGoalBelowGoal() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 0, cacheRead: 250_000_000, cacheCreate: 0),
-        ])
-        // Goal: 1B tokens. Used: 250M. -> 25%
-        let provider = ClaudeUsageProvider(
-            projectsDir: tempDir,
-            clock: fixedClock("2026-04-26"),
-            mode: .percentOfWeekly,
-            weeklyGoalTokens: 1_000_000_000
-        )
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "25%\nweek")
-    }
-
-    func testPercentOfGoalOver100() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 0, cacheRead: 1_500_000_000, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
         ])
         let provider = ClaudeUsageProvider(
             projectsDir: tempDir,
             clock: fixedClock("2026-04-26"),
-            mode: .percentOfWeekly,
-            weeklyGoalTokens: 1_000_000_000
-        )
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "150%\nweek")
-    }
-
-    func testPercentWithoutGoalShowsHint() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 0, cacheRead: 1_000_000, cacheCreate: 0),
-        ])
-        let provider = ClaudeUsageProvider(
-            projectsDir: tempDir,
-            clock: fixedClock("2026-04-26"),
-            mode: .percentOfWeekly,
+            mode: .today,
             weeklyGoalTokens: 0
         )
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Set goal\nin Settings")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\nset goal")
     }
 
-    // MARK: - Formatting
-
-    func testFormatsSmallNumbers() async throws {
+    func testWeekWithoutGoalShowsHint() async throws {
         try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 999, cacheRead: 0, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
+        ])
+        let provider = ClaudeUsageProvider(
+            projectsDir: tempDir,
+            clock: fixedClock("2026-04-26"),
+            mode: .week,
+            weeklyGoalTokens: 0
+        )
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\nset goal")
+    }
+
+    // MARK: - Today percentage
+
+    func testTodayBelow100() async throws {
+        try writeSession("p1", "session1", lines: [
+            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 100, output: 100, cacheRead: 0, cacheCreate: 50),
+        ])
+        // 250 / 1000 = 25%
+        let provider = makeProvider(date: "2026-04-26", mode: .today)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today")
+    }
+
+    func testTodayExactly100() async throws {
+        try writeSession("p1", "session1", lines: [
+            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
+        ])
+        // 1000 / 1000 = 100%
+        let provider = makeProvider(date: "2026-04-26", mode: .today)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n100% today")
+    }
+
+    func testTodayAbove100() async throws {
+        try writeSession("p1", "session1", lines: [
+            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 2500, cacheRead: 0, cacheCreate: 0),
+        ])
+        // 2500 / 1000 = 250%
+        let provider = makeProvider(date: "2026-04-26", mode: .today)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n250% today")
+    }
+
+    func testTodaySumsAcrossProjectsAndFiles() async throws {
+        try writeSession("p1", "s1", lines: [
+            assistantLine(timestamp: "2026-04-26T08:00:00Z", input: 0, output: 200, cacheRead: 0, cacheCreate: 0),
+        ])
+        try writeSession("p1", "s2", lines: [
+            assistantLine(timestamp: "2026-04-26T09:00:00Z", input: 0, output: 300, cacheRead: 0, cacheCreate: 0),
+        ])
+        try writeSession("p2", "s1", lines: [
+            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 500, cacheRead: 0, cacheCreate: 0),
+        ])
+        // 200 + 300 + 500 = 1000 -> 100%
+        let provider = makeProvider(date: "2026-04-26", mode: .today)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n100% today")
+    }
+
+    func testCacheReadsAreExcluded() async throws {
+        // Cache reads inflate the raw count without representing real usage.
+        // Verify they're dropped from the active total.
+        try writeSession("p1", "session1", lines: [
+            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 250, cacheRead: 999_999_999, cacheCreate: 0),
+        ])
+        // 250 / 1000 = 25% (cacheRead ignored)
+        let provider = makeProvider(date: "2026-04-26", mode: .today)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today")
+    }
+
+    func testTodayIgnoresOtherDates() async throws {
+        try writeSession("p1", "session1", lines: [
+            assistantLine(timestamp: "2026-04-25T23:59:59Z", input: 0, output: 0, cacheRead: 999_999, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-27T00:00:00Z", input: 0, output: 0, cacheRead: 999_999, cacheCreate: 0),
         ])
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "999\ntoday")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today")
     }
 
-    func testFormatsBillionsAsM() async throws {
+    func testTodayIgnoresNonAssistantEntries() async throws {
         try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 0, cacheRead: 3_400_000_000, cacheCreate: 0),
+            #"{"type":"user","timestamp":"2026-04-26T10:00:00Z","message":{"usage":{"input_tokens":999999}}}"#,
+            #"{"type":"system","timestamp":"2026-04-26T10:00:00Z"}"#,
+            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 250, cacheRead: 0, cacheCreate: 0),
+        ])
+        // Only the assistant line counts: 250 / 1000 = 25%
+        let provider = makeProvider(date: "2026-04-26", mode: .today)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today")
+    }
+
+    // MARK: - Week percentage
+
+    func testWeekBelow100() async throws {
+        try writeSession("p1", "session1", lines: [
+            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 1750, cacheRead: 0, cacheCreate: 0),
+        ])
+        // 1750 / 7000 = 25%
+        let provider = makeProvider(date: "2026-04-26", mode: .week)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% week")
+    }
+
+    func testWeekAbove100() async throws {
+        try writeSession("p1", "session1", lines: [
+            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 10_500, cacheRead: 0, cacheCreate: 0),
+        ])
+        // 10500 / 7000 = 150%
+        let provider = makeProvider(date: "2026-04-26", mode: .week)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n150% week")
+    }
+
+    func testWeekSumsLast7Days() async throws {
+        // 1000 today, 1000 yesterday, 1000 six days ago, 999_999 eight days ago (out of window)
+        try writeSession("p1", "today", lines: [
+            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
+        ])
+        try writeSession("p1", "yesterday", lines: [
+            assistantLine(timestamp: "2026-04-25T12:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
+        ])
+        try writeSession("p1", "sixDaysAgo", lines: [
+            assistantLine(timestamp: "2026-04-20T12:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
+        ])
+        try writeSession("p1", "eightDaysAgo", lines: [
+            assistantLine(timestamp: "2026-04-18T12:00:00Z", input: 0, output: 999_999, cacheRead: 0, cacheCreate: 0),
+        ])
+        // 3000 / 7000 = 42% (truncates from 42.85%)
+        let provider = makeProvider(date: "2026-04-26", mode: .week)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n42% week")
+    }
+
+    // MARK: - Icon
+
+    func testUsesSparkleIcon() async throws {
+        try writeSession("p1", "session1", lines: [
+            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 1, cacheRead: 0, cacheCreate: 0),
         ])
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        // 3.4B is shown as 3400.0M -> we want compact: "3.4B today"
-        XCTAssertEqual(provider.cachedData?.text, "3.4B\ntoday")
+        XCTAssertEqual(provider.cachedData?.icon, "\u{2728}")
     }
 
     // MARK: - Helpers
@@ -211,7 +242,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
             projectsDir: tempDir,
             clock: fixedClock(date),
             mode: mode,
-            weeklyGoalTokens: 0
+            weeklyGoalTokens: testWeeklyGoal
         )
     }
 

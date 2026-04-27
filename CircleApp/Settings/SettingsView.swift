@@ -416,8 +416,6 @@ private struct ContentPageContent: View {
 
     var body: some View {
         SettingsSection("Rotation") {
-            Toggle("Auto-rotate content", isOn: $settings.contentRotationEnabled)
-
             LabeledSlider(
                 label: "Interval",
                 value: Binding(
@@ -429,7 +427,6 @@ private struct ContentPageContent: View {
                 suffix: "s",
                 valueWidth: 40
             )
-            .disabled(!settings.contentRotationEnabled)
         }
 
         SettingsSection("Clock") {
@@ -485,10 +482,21 @@ private struct ContentPageContent: View {
             HStack(spacing: 12) {
                 Text("Display")
                     .frame(width: 90, alignment: .leading)
-                Picker("", selection: $settings.claudeUsageMode) {
+                // Defer the write to the next runloop tick. Writing directly
+                // to the @Published binding from a Picker selection mutation
+                // can fire objectWillChange.send() while SwiftUI is still
+                // processing the gesture, triggering the "Publishing changes
+                // from within view updates" warning.
+                Picker("", selection: Binding(
+                    get: { settings.claudeUsageMode },
+                    set: { newValue in
+                        DispatchQueue.main.async {
+                            settings.claudeUsageMode = newValue
+                        }
+                    }
+                )) {
                     Text("Today").tag(ClaudeUsageMode.today)
                     Text("This Week").tag(ClaudeUsageMode.week)
-                    Text("% of Goal").tag(ClaudeUsageMode.percentOfWeekly)
                 }
                 .pickerStyle(.segmented)
             }
@@ -505,7 +513,20 @@ private struct ContentPageContent: View {
                 suffix: "M",
                 valueWidth: 60
             )
-            .disabled(!settings.claudeUsageEnabled || settings.claudeUsageMode != .percentOfWeekly)
+            .disabled(!settings.claudeUsageEnabled)
+
+            HStack {
+                Spacer()
+                Button("Suggest from last 4 weeks") {
+                    Task.detached(priority: .userInitiated) {
+                        let suggested = ClaudeUsageProvider.suggestWeeklyGoalMTokens()
+                        await MainActor.run {
+                            SettingsManager.shared.claudeUsageWeeklyGoalMTokens = suggested
+                        }
+                    }
+                }
+                .disabled(!settings.claudeUsageEnabled)
+            }
         }
     }
 }
