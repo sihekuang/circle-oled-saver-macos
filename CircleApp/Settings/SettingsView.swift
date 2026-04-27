@@ -416,8 +416,6 @@ private struct ContentPageContent: View {
 
     var body: some View {
         SettingsSection("Rotation") {
-            Toggle("Auto-rotate content", isOn: $settings.contentRotationEnabled)
-
             LabeledSlider(
                 label: "Interval",
                 value: Binding(
@@ -429,7 +427,6 @@ private struct ContentPageContent: View {
                 suffix: "s",
                 valueWidth: 40
             )
-            .disabled(!settings.contentRotationEnabled)
         }
 
         SettingsSection("Clock") {

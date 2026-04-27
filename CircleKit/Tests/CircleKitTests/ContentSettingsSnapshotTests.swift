@@ -34,24 +34,22 @@ final class ContentSettingsSnapshotTests: XCTestCase {
     }
 
     func testNonContentSettingsAreNotInSnapshot() {
-        // Snapshot should ignore ball physics, theme, hotkeys, etc.
-        // Verified indirectly: making two snapshots from the singleton with
-        // unrelated settings churn shouldn't blow up. The exhaustive list of
-        // fields lives in the struct definition; this test just guards
-        // against accidentally adding e.g. ballSize to the snapshot.
+        // Snapshot should ignore ball physics, theme, hotkeys, etc. The
+        // exhaustive list of fields lives in the struct definition; this test
+        // just guards against accidentally adding e.g. ballSize to the snapshot.
         let a = ContentSettingsSnapshot(
             clockEnabled: true, clockFormat24h: false,
             systemInfoEnabled: true, showBattery: true,
             stockEnabled: false, stockSymbols: "", stockRefreshSeconds: 300,
             claudeUsageEnabled: false,
-            rotationEnabled: true, rotationInterval: 10
+            rotationInterval: 10
         )
         let b = ContentSettingsSnapshot(
             clockEnabled: true, clockFormat24h: false,
             systemInfoEnabled: true, showBattery: true,
             stockEnabled: false, stockSymbols: "", stockRefreshSeconds: 300,
             claudeUsageEnabled: false,
-            rotationEnabled: true, rotationInterval: 10
+            rotationInterval: 10
         )
         XCTAssertEqual(a, b)
     }
@@ -67,7 +65,6 @@ final class ContentSettingsSnapshotTests: XCTestCase {
         stockSymbols: String = "AAPL",
         stockRefreshSeconds: Int = 300,
         claudeUsageEnabled: Bool = false,
-        rotationEnabled: Bool = true,
         rotationInterval: Int = 10
     ) -> ContentSettingsSnapshot {
         ContentSettingsSnapshot(
@@ -79,7 +76,6 @@ final class ContentSettingsSnapshotTests: XCTestCase {
             stockSymbols: stockSymbols,
             stockRefreshSeconds: stockRefreshSeconds,
             claudeUsageEnabled: claudeUsageEnabled,
-            rotationEnabled: rotationEnabled,
             rotationInterval: rotationInterval
         )
     }

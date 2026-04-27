@@ -12,7 +12,6 @@ struct ContentSettingsSnapshot: Equatable {
     let stockSymbols: String
     let stockRefreshSeconds: Int
     let claudeUsageEnabled: Bool
-    let rotationEnabled: Bool
     let rotationInterval: Int
 
     init(
@@ -24,7 +23,6 @@ struct ContentSettingsSnapshot: Equatable {
         stockSymbols: String,
         stockRefreshSeconds: Int,
         claudeUsageEnabled: Bool,
-        rotationEnabled: Bool,
         rotationInterval: Int
     ) {
         self.clockEnabled = clockEnabled
@@ -35,7 +33,6 @@ struct ContentSettingsSnapshot: Equatable {
         self.stockSymbols = stockSymbols
         self.stockRefreshSeconds = stockRefreshSeconds
         self.claudeUsageEnabled = claudeUsageEnabled
-        self.rotationEnabled = rotationEnabled
         self.rotationInterval = rotationInterval
     }
 
@@ -49,7 +46,6 @@ struct ContentSettingsSnapshot: Equatable {
             stockSymbols: settings.stockSymbols,
             stockRefreshSeconds: settings.stockRefreshSeconds,
             claudeUsageEnabled: settings.claudeUsageEnabled,
-            rotationEnabled: settings.contentRotationEnabled,
             rotationInterval: settings.contentRotationInterval
         )
     }

@@ -70,7 +70,7 @@ public final class CircleRenderer {
 
         contentRotator = ContentRotator(
             providers: providers,
-            intervalSeconds: settings.contentRotationEnabled ? settings.contentRotationInterval : 9999
+            intervalSeconds: settings.contentRotationInterval
         )
         contentRotator?.start()
     }
