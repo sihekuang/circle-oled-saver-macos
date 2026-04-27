@@ -107,6 +107,9 @@ public final class SettingsManager: ObservableObject {
     @Published public var stockRefreshSeconds: Int {
         didSet { defaults.set(stockRefreshSeconds, forKey: "stockRefreshSeconds"); notify() }
     }
+    @Published public var claudeUsageEnabled: Bool {
+        didSet { defaults.set(claudeUsageEnabled, forKey: "claudeUsageEnabled"); notify() }
+    }
     @Published public var oledDisplayIDs: Set<String> {
         didSet { defaults.set(Array(oledDisplayIDs), forKey: "oledDisplayIDs"); notify() }
     }
@@ -145,6 +148,7 @@ public final class SettingsManager: ObservableObject {
             "stockEnabled": false,
             "stockSymbols": "AAPL, GOOGL, TSLA",
             "stockRefreshSeconds": 300,
+            "claudeUsageEnabled": false,
         ])
 
         // Load values
@@ -177,6 +181,7 @@ public final class SettingsManager: ObservableObject {
         self.stockEnabled = defaults.bool(forKey: "stockEnabled")
         self.stockSymbols = defaults.string(forKey: "stockSymbols") ?? "AAPL, GOOGL, TSLA"
         self.stockRefreshSeconds = defaults.integer(forKey: "stockRefreshSeconds")
+        self.claudeUsageEnabled = defaults.bool(forKey: "claudeUsageEnabled")
     }
 
     /// Returns true if the overlay should show on a screen with this display ID.

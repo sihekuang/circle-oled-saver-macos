@@ -473,6 +473,15 @@ private struct ContentPageContent: View {
             )
             .disabled(!settings.stockEnabled)
         }
+
+        SettingsSection("Claude Usage") {
+            Toggle("Show Claude Token Usage", isOn: $settings.claudeUsageEnabled)
+
+            Text("Displays today's total Claude tokens, read from the local Claude Code stats cache (~/.claude/stats-cache.json). Requires the Claude Code CLI to be installed and used at least once — without it, this content shows \u{201C}No data\u{201D}.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 }
 

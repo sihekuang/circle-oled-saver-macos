@@ -53,24 +53,16 @@ public final class CircleRenderer {
     }
 
     private func setupContentProviders() {
-        var providers: [ContentProvider] = []
-
-        if settings.clockEnabled {
-            providers.append(ClockProvider(use24Hour: settings.clockFormat24h))
-        }
-        if settings.systemInfoEnabled {
-            providers.append(SystemInfoProvider(showBattery: settings.showBattery))
-        }
-        if settings.stockEnabled {
-            let symbols = settings.stockSymbols
-                .split(separator: ",")
-                .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { !$0.isEmpty }
-            providers.append(StockProvider(
-                symbols: symbols,
-                refreshSeconds: settings.stockRefreshSeconds
-            ))
-        }
+        let providers = makeContentProviders(
+            clockEnabled: settings.clockEnabled,
+            clockFormat24h: settings.clockFormat24h,
+            systemInfoEnabled: settings.systemInfoEnabled,
+            showBattery: settings.showBattery,
+            stockEnabled: settings.stockEnabled,
+            stockSymbols: settings.stockSymbols,
+            stockRefreshSeconds: settings.stockRefreshSeconds,
+            claudeUsageEnabled: settings.claudeUsageEnabled
+        )
 
         guard !providers.isEmpty else { return }
 
