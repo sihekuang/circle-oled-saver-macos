@@ -3,56 +3,136 @@ import Foundation
 public final class ClaudeUsageProvider: BaseContentProvider {
     public override var refreshInterval: TimeInterval { 30.0 }
 
-    private let statsPath: URL
+    private let projectsDir: URL
     private let clock: () -> Date
+    private let mode: ClaudeUsageMode
+    private let weeklyGoalTokens: Int
 
     public override convenience init() {
+        let settings = SettingsManager.shared
         self.init(
-            statsPath: FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(".claude/stats-cache.json"),
-            clock: { Date() }
+            projectsDir: FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".claude/projects"),
+            clock: { Date() },
+            mode: settings.claudeUsageMode,
+            weeklyGoalTokens: settings.claudeUsageWeeklyGoalMTokens * 1_000_000
         )
     }
 
-    init(statsPath: URL, clock: @escaping () -> Date = { Date() }) {
-        self.statsPath = statsPath
+    init(
+        projectsDir: URL,
+        clock: @escaping () -> Date = { Date() },
+        mode: ClaudeUsageMode = .today,
+        weeklyGoalTokens: Int = 0
+    ) {
+        self.projectsDir = projectsDir
         self.clock = clock
+        self.mode = mode
+        self.weeklyGoalTokens = weeklyGoalTokens
         super.init()
     }
 
     public override func fetchData() async {
-        guard let stats = readStatsCache() else {
-            cachedData = ContentData(icon: "\u{2728}", text: "No data\ntoday")
-            return
+        let now = clock()
+        let todayPrefix = dateString(for: now)
+        let weekPrefixes = Set((0..<7).map {
+            dateString(for: now.addingTimeInterval(TimeInterval(-86400 * $0)))
+        })
+
+        let totals = aggregate(weekPrefixes: weekPrefixes, todayPrefix: todayPrefix, now: now)
+
+        switch mode {
+        case .today:
+            cachedData = ContentData(icon: "\u{2728}", text: "\(formatTokens(totals.today))\ntoday")
+        case .week:
+            cachedData = ContentData(icon: "\u{2728}", text: "\(formatTokens(totals.week))\nweek")
+        case .percentOfWeekly:
+            if weeklyGoalTokens <= 0 {
+                cachedData = ContentData(icon: "\u{2728}", text: "Set goal\nin Settings")
+            } else {
+                let pct = Int((Double(totals.week) / Double(weeklyGoalTokens)) * 100)
+                cachedData = ContentData(icon: "\u{2728}", text: "\(pct)%\nweek")
+            }
+        }
+    }
+
+    // MARK: - Aggregation
+
+    private func aggregate(
+        weekPrefixes: Set<String>,
+        todayPrefix: String,
+        now: Date
+    ) -> (today: Int, week: Int) {
+        var today = 0
+        var week = 0
+
+        guard let projectDirs = try? FileManager.default.contentsOfDirectory(
+            at: projectsDir,
+            includingPropertiesForKeys: [.isDirectoryKey]
+        ) else {
+            return (0, 0)
         }
 
-        let today = todayString()
-        let total = stats.dailyModelTokens
-            .first { $0.date == today }?
-            .tokensByModel
-            .values
-            .reduce(0, +) ?? 0
+        // Skip files modified before the start of the 7-day window — they can't
+        // contain entries for any of the dates we care about.
+        let windowStart = now.addingTimeInterval(-86400 * 7)
 
-        cachedData = ContentData(
-            icon: "\u{2728}",
-            text: "\(formatTokens(total))\ntoday"
-        )
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+        for projectDir in projectDirs {
+            guard (try? projectDir.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { continue }
+            guard let files = try? FileManager.default.contentsOfDirectory(
+                at: projectDir,
+                includingPropertiesForKeys: [.contentModificationDateKey]
+            ) else { continue }
+
+            for file in files where file.pathExtension == "jsonl" {
+                let mtime = (try? file.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
+                if let mtime, mtime < windowStart { continue }
+
+                guard let data = try? Data(contentsOf: file),
+                      let content = String(data: data, encoding: .utf8) else { continue }
+
+                for line in content.split(separator: "\n", omittingEmptySubsequences: true) {
+                    guard let lineData = line.data(using: .utf8),
+                          let entry = try? decoder.decode(JSONLEntry.self, from: lineData),
+                          entry.type == "assistant",
+                          let timestamp = entry.timestamp,
+                          let usage = entry.message?.usage else { continue }
+
+                    let dateOnly = String(timestamp.prefix(10))
+                    guard weekPrefixes.contains(dateOnly) else { continue }
+
+                    let total = (usage.inputTokens ?? 0)
+                              + (usage.outputTokens ?? 0)
+                              + (usage.cacheReadInputTokens ?? 0)
+                              + (usage.cacheCreationInputTokens ?? 0)
+
+                    week += total
+                    if dateOnly == todayPrefix {
+                        today += total
+                    }
+                }
+            }
+        }
+
+        return (today, week)
     }
 
-    private func readStatsCache() -> StatsCache? {
-        guard let data = try? Data(contentsOf: statsPath) else { return nil }
-        return try? JSONDecoder().decode(StatsCache.self, from: data)
-    }
+    // MARK: - Formatting
 
-    private func todayString() -> String {
+    private func dateString(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone.current
-        return formatter.string(from: clock())
+        return formatter.string(from: date)
     }
 
     private func formatTokens(_ count: Int) -> String {
-        if count >= 1_000_000 {
+        if count >= 1_000_000_000 {
+            return String(format: "%.1fB", Double(count) / 1_000_000_000)
+        } else if count >= 1_000_000 {
             return String(format: "%.1fM", Double(count) / 1_000_000)
         } else if count >= 1_000 {
             return "\(count / 1_000)K"
@@ -62,11 +142,19 @@ public final class ClaudeUsageProvider: BaseContentProvider {
     }
 }
 
-private struct StatsCache: Decodable {
-    let dailyModelTokens: [DailyModelTokens]
-}
+private struct JSONLEntry: Decodable {
+    let type: String?
+    let timestamp: String?
+    let message: Message?
 
-private struct DailyModelTokens: Decodable {
-    let date: String
-    let tokensByModel: [String: Int]
+    struct Message: Decodable {
+        let usage: Usage?
+    }
+
+    struct Usage: Decodable {
+        let inputTokens: Int?
+        let outputTokens: Int?
+        let cacheReadInputTokens: Int?
+        let cacheCreationInputTokens: Int?
+    }
 }

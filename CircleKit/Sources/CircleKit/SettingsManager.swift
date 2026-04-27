@@ -12,6 +12,12 @@ public enum ThemeID: String, CaseIterable, Codable {
     case soft
 }
 
+public enum ClaudeUsageMode: String, CaseIterable, Codable {
+    case today
+    case week
+    case percentOfWeekly
+}
+
 public final class SettingsManager: ObservableObject {
     public static let shared = SettingsManager()
 
@@ -110,6 +116,12 @@ public final class SettingsManager: ObservableObject {
     @Published public var claudeUsageEnabled: Bool {
         didSet { defaults.set(claudeUsageEnabled, forKey: "claudeUsageEnabled"); notify() }
     }
+    @Published public var claudeUsageMode: ClaudeUsageMode {
+        didSet { defaults.set(claudeUsageMode.rawValue, forKey: "claudeUsageMode"); notify() }
+    }
+    @Published public var claudeUsageWeeklyGoalMTokens: Int {
+        didSet { defaults.set(claudeUsageWeeklyGoalMTokens, forKey: "claudeUsageWeeklyGoalMTokens"); notify() }
+    }
     @Published public var oledDisplayIDs: Set<String> {
         didSet { defaults.set(Array(oledDisplayIDs), forKey: "oledDisplayIDs"); notify() }
     }
@@ -149,6 +161,8 @@ public final class SettingsManager: ObservableObject {
             "stockSymbols": "AAPL, GOOGL, TSLA",
             "stockRefreshSeconds": 300,
             "claudeUsageEnabled": false,
+            "claudeUsageMode": "today",
+            "claudeUsageWeeklyGoalMTokens": 1000,
         ])
 
         // Load values
@@ -182,6 +196,8 @@ public final class SettingsManager: ObservableObject {
         self.stockSymbols = defaults.string(forKey: "stockSymbols") ?? "AAPL, GOOGL, TSLA"
         self.stockRefreshSeconds = defaults.integer(forKey: "stockRefreshSeconds")
         self.claudeUsageEnabled = defaults.bool(forKey: "claudeUsageEnabled")
+        self.claudeUsageMode = ClaudeUsageMode(rawValue: defaults.string(forKey: "claudeUsageMode") ?? "today") ?? .today
+        self.claudeUsageWeeklyGoalMTokens = defaults.integer(forKey: "claudeUsageWeeklyGoalMTokens")
     }
 
     /// Returns true if the overlay should show on a screen with this display ID.
