@@ -98,6 +98,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.idleMonitor.suppressDismissal()
             if let isOn = self.toggleMenuBarAutoHide() {
                 self.hud.showMenuBarAutoHideToggle(isOn: isOn)
+            } else {
+                self.hud.showMenuBarPermissionNeeded()
             }
         }
         hotkeyManager.register()
@@ -176,7 +178,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let appleScript = NSAppleScript(source: script) else { return nil }
         let result = appleScript.executeAndReturnError(&error)
         if let error {
-            print("[Circle] Menu bar auto-hide toggle failed: \(error)")
+            NSLog("[Circle] Menu bar auto-hide toggle failed: %@. Grant Automation permission to Circle in System Settings → Privacy & Security → Automation → System Events.", error)
             return nil
         }
         return result.booleanValue
@@ -232,8 +234,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 dismissOverlays()
                 idleMonitor.start()
             }
-        } else if enabledChanged && !settings.enabled {
-            dismissOverlays()
+        } else if enabledChanged {
+            if !settings.enabled {
+                dismissOverlays()
+            } else {
+                // Re-enabled: reset idle monitor so a stale isScreensaverActive
+                // from before the disable doesn't block the next onIdle. In
+                // always-on mode, restore the overlay immediately; in
+                // idle-trigger mode, wait for the next natural idle cycle.
+                idleMonitor.resetActivity()
+                if settings.alwaysOnMode {
+                    showOverlays()
+                }
+            }
         } else if displaysChanged, settings.alwaysOnMode || overlayController != nil {
             // Display selection changed — recreate overlays to attach to the new set.
             dismissOverlays()

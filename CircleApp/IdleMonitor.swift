@@ -17,6 +17,14 @@ final class IdleMonitor {
         suppressUntil = Date().addingTimeInterval(seconds)
     }
 
+    /// Clear active state. Call this when the screensaver is re-enabled after
+    /// being disabled while in the active (idle-triggered) state — otherwise
+    /// the stale isScreensaverActive flag prevents the next idle cycle from
+    /// firing onIdle.
+    func resetActivity() {
+        isScreensaverActive = false
+    }
+
     func start() {
         guard timer == nil else { return }
         activity = ProcessInfo.processInfo.beginActivity(

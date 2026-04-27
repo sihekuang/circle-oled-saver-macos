@@ -12,6 +12,7 @@ public final class CircleRenderer {
     private let hostLayer: CALayer
     private var bounds: CGSize { hostLayer.bounds.size }
     private let settings: SettingsManager
+    private var lastContentSnapshot: ContentSettingsSnapshot
 
     // Proximity fade state (set from outside)
     public var cursorPosition: CGPoint = CGPoint(x: -1000, y: -1000)
@@ -19,6 +20,7 @@ public final class CircleRenderer {
     public init(hostLayer: CALayer, bounds: CGSize) {
         self.hostLayer = hostLayer
         self.settings = SettingsManager.shared
+        self.lastContentSnapshot = ContentSettingsSnapshot(settings: settings)
 
         // Initialize ball
         self.ball = BallState(
@@ -181,6 +183,16 @@ public final class CircleRenderer {
             theme.teardown()
             theme = Self.createTheme(for: settings.theme)
             theme.setup(in: hostLayer)
+        }
+
+        // Content provider changes - rebuild rotator if any content setting
+        // changed (clock/system info/stocks toggles, rotation interval, etc).
+        let snapshot = ContentSettingsSnapshot(settings: settings)
+        if snapshot != lastContentSnapshot {
+            contentRotator?.stop()
+            contentRotator = nil
+            setupContentProviders()
+            lastContentSnapshot = snapshot
         }
     }
 

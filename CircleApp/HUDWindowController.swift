@@ -44,6 +44,13 @@ final class HUDController {
         ))
     }
 
+    func showMenuBarPermissionNeeded() {
+        show(.imageAndText(
+            image: .static(.symbol(systemName: "exclamationmark.triangle.fill")),
+            title: "Grant Automation in Settings"
+        ))
+    }
+
     func showContentRotation(contentName: String) {
         let iconName: String
         switch contentName.lowercased() {
