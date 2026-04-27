@@ -3,7 +3,20 @@ import Foundation
 public final class ClaudeUsageProvider: BaseContentProvider {
     public override var refreshInterval: TimeInterval { 30.0 }
 
-    public override init() {
+    private let statsPath: URL
+    private let clock: () -> Date
+
+    public override convenience init() {
+        self.init(
+            statsPath: FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent(".claude/stats-cache.json"),
+            clock: { Date() }
+        )
+    }
+
+    init(statsPath: URL, clock: @escaping () -> Date = { Date() }) {
+        self.statsPath = statsPath
+        self.clock = clock
         super.init()
     }
 
@@ -27,9 +40,7 @@ public final class ClaudeUsageProvider: BaseContentProvider {
     }
 
     private func readStatsCache() -> StatsCache? {
-        let path = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".claude/stats-cache.json")
-        guard let data = try? Data(contentsOf: path) else { return nil }
+        guard let data = try? Data(contentsOf: statsPath) else { return nil }
         return try? JSONDecoder().decode(StatsCache.self, from: data)
     }
 
@@ -37,7 +48,7 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone.current
-        return formatter.string(from: Date())
+        return formatter.string(from: clock())
     }
 
     private func formatTokens(_ count: Int) -> String {
