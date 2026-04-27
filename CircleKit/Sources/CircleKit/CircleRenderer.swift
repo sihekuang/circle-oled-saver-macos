@@ -71,6 +71,9 @@ public final class CircleRenderer {
                 refreshSeconds: settings.stockRefreshSeconds
             ))
         }
+        if settings.claudeUsageEnabled {
+            providers.append(ClaudeUsageProvider())
+        }
 
         guard !providers.isEmpty else { return }
 
