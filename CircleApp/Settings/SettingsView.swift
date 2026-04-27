@@ -477,10 +477,35 @@ private struct ContentPageContent: View {
         SettingsSection("Claude Usage") {
             Toggle("Show Claude Token Usage", isOn: $settings.claudeUsageEnabled)
 
-            Text("Displays today's total Claude tokens, read from the local Claude Code stats cache (~/.claude/stats-cache.json). Requires the Claude Code CLI to be installed and used at least once — without it, this content shows \u{201C}No data\u{201D}.")
+            Text("Aggregates Claude tokens used on this Mac via the Claude Code CLI (reads ~/.claude/projects). Requires the Claude Code CLI to be installed and used. Tokens used through the web app or other devices are not included.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 12) {
+                Text("Display")
+                    .frame(width: 90, alignment: .leading)
+                Picker("", selection: $settings.claudeUsageMode) {
+                    Text("Today").tag(ClaudeUsageMode.today)
+                    Text("This Week").tag(ClaudeUsageMode.week)
+                    Text("% of Goal").tag(ClaudeUsageMode.percentOfWeekly)
+                }
+                .pickerStyle(.segmented)
+            }
+            .disabled(!settings.claudeUsageEnabled)
+
+            LabeledSlider(
+                label: "Weekly Goal",
+                value: Binding(
+                    get: { Double(settings.claudeUsageWeeklyGoalMTokens) },
+                    set: { settings.claudeUsageWeeklyGoalMTokens = Int($0) }
+                ),
+                range: 100...10000,
+                step: 100,
+                suffix: "M",
+                valueWidth: 60
+            )
+            .disabled(!settings.claudeUsageEnabled || settings.claudeUsageMode != .percentOfWeekly)
         }
     }
 }
