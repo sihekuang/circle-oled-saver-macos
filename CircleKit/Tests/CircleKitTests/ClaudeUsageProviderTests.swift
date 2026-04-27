@@ -44,11 +44,11 @@ final class ClaudeUsageProviderTests: XCTestCase {
     func testIgnoresMalformedLines() async throws {
         try writeSession("p1", "session1", lines: [
             "this is not json",
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 100, output: 50, cacheRead: 50, cacheCreate: 50),
+            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 100, output: 100, cacheRead: 999, cacheCreate: 50),
             "",
             "{ broken: json",
         ])
-        // Total = 250 tokens. Daily share = 1000. -> 25%
+        // Active = 100 + 100 + 50 = 250 (cacheRead excluded). Daily share = 1000. -> 25%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
         XCTAssertEqual(provider.cachedData?.text, "25%\ntoday")
@@ -86,7 +86,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
 
     func testTodayBelow100() async throws {
         try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 100, output: 100, cacheRead: 50, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 100, output: 100, cacheRead: 0, cacheCreate: 50),
         ])
         // 250 / 1000 = 25%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
@@ -106,7 +106,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
 
     func testTodayAbove100() async throws {
         try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 0, cacheRead: 2500, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 2500, cacheRead: 0, cacheCreate: 0),
         ])
         // 2500 / 1000 = 250%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
@@ -116,18 +116,30 @@ final class ClaudeUsageProviderTests: XCTestCase {
 
     func testTodaySumsAcrossProjectsAndFiles() async throws {
         try writeSession("p1", "s1", lines: [
-            assistantLine(timestamp: "2026-04-26T08:00:00Z", input: 0, output: 0, cacheRead: 200, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-26T08:00:00Z", input: 0, output: 200, cacheRead: 0, cacheCreate: 0),
         ])
         try writeSession("p1", "s2", lines: [
-            assistantLine(timestamp: "2026-04-26T09:00:00Z", input: 0, output: 0, cacheRead: 300, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-26T09:00:00Z", input: 0, output: 300, cacheRead: 0, cacheCreate: 0),
         ])
         try writeSession("p2", "s1", lines: [
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 0, cacheRead: 500, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 500, cacheRead: 0, cacheCreate: 0),
         ])
         // 200 + 300 + 500 = 1000 -> 100%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
         XCTAssertEqual(provider.cachedData?.text, "100%\ntoday")
+    }
+
+    func testCacheReadsAreExcluded() async throws {
+        // Cache reads inflate the raw count without representing real usage.
+        // Verify they're dropped from the active total.
+        try writeSession("p1", "session1", lines: [
+            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 250, cacheRead: 999_999_999, cacheCreate: 0),
+        ])
+        // 250 / 1000 = 25% (cacheRead ignored)
+        let provider = makeProvider(date: "2026-04-26", mode: .today)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "25%\ntoday")
     }
 
     func testTodayIgnoresOtherDates() async throws {
@@ -156,7 +168,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
 
     func testWeekBelow100() async throws {
         try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 0, cacheRead: 1750, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 1750, cacheRead: 0, cacheCreate: 0),
         ])
         // 1750 / 7000 = 25%
         let provider = makeProvider(date: "2026-04-26", mode: .week)
@@ -166,7 +178,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
 
     func testWeekAbove100() async throws {
         try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 0, cacheRead: 10_500, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 10_500, cacheRead: 0, cacheCreate: 0),
         ])
         // 10500 / 7000 = 150%
         let provider = makeProvider(date: "2026-04-26", mode: .week)
@@ -177,16 +189,16 @@ final class ClaudeUsageProviderTests: XCTestCase {
     func testWeekSumsLast7Days() async throws {
         // 1000 today, 1000 yesterday, 1000 six days ago, 999_999 eight days ago (out of window)
         try writeSession("p1", "today", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 0, cacheRead: 1000, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
         ])
         try writeSession("p1", "yesterday", lines: [
-            assistantLine(timestamp: "2026-04-25T12:00:00Z", input: 0, output: 0, cacheRead: 1000, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-25T12:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
         ])
         try writeSession("p1", "sixDaysAgo", lines: [
-            assistantLine(timestamp: "2026-04-20T12:00:00Z", input: 0, output: 0, cacheRead: 1000, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-20T12:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
         ])
         try writeSession("p1", "eightDaysAgo", lines: [
-            assistantLine(timestamp: "2026-04-18T12:00:00Z", input: 0, output: 0, cacheRead: 999_999, cacheCreate: 0),
+            assistantLine(timestamp: "2026-04-18T12:00:00Z", input: 0, output: 999_999, cacheRead: 0, cacheCreate: 0),
         ])
         // 3000 / 7000 = 42% (truncates from 42.85%)
         let provider = makeProvider(date: "2026-04-26", mode: .week)

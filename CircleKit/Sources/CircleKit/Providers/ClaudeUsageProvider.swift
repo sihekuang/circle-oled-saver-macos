@@ -106,9 +106,12 @@ public final class ClaudeUsageProvider: BaseContentProvider {
                     let dateOnly = String(timestamp.prefix(10))
                     guard weekPrefixes.contains(dateOnly) else { continue }
 
+                    // Active token usage: what the user actually generated this
+                    // session. Cache reads are excluded — they're background
+                    // re-reads of the cached system prompt on every turn and
+                    // would dwarf the real usage signal.
                     let total = (usage.inputTokens ?? 0)
                               + (usage.outputTokens ?? 0)
-                              + (usage.cacheReadInputTokens ?? 0)
                               + (usage.cacheCreationInputTokens ?? 0)
 
                     week += total
