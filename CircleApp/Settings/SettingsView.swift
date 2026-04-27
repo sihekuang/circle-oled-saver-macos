@@ -502,6 +502,19 @@ private struct ContentPageContent: View {
                 valueWidth: 60
             )
             .disabled(!settings.claudeUsageEnabled)
+
+            HStack {
+                Spacer()
+                Button("Suggest from last 4 weeks") {
+                    Task.detached(priority: .userInitiated) {
+                        let suggested = ClaudeUsageProvider.suggestWeeklyGoalMTokens()
+                        await MainActor.run {
+                            SettingsManager.shared.claudeUsageWeeklyGoalMTokens = suggested
+                        }
+                    }
+                }
+                .disabled(!settings.claudeUsageEnabled)
+            }
         }
     }
 }
