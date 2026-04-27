@@ -33,6 +33,18 @@ final class ContentSettingsSnapshotTests: XCTestCase {
         XCTAssertNotEqual(a, b)
     }
 
+    func testClaudeUsageModeChangeChangesSnapshot() {
+        let a = makeSnapshot(claudeUsageMode: .today)
+        let b = makeSnapshot(claudeUsageMode: .week)
+        XCTAssertNotEqual(a, b)
+    }
+
+    func testClaudeUsageWeeklyGoalChangeChangesSnapshot() {
+        let a = makeSnapshot(claudeUsageWeeklyGoalMTokens: 100)
+        let b = makeSnapshot(claudeUsageWeeklyGoalMTokens: 500)
+        XCTAssertNotEqual(a, b)
+    }
+
     func testNonContentSettingsAreNotInSnapshot() {
         // Snapshot should ignore ball physics, theme, hotkeys, etc. The
         // exhaustive list of fields lives in the struct definition; this test
@@ -42,6 +54,8 @@ final class ContentSettingsSnapshotTests: XCTestCase {
             systemInfoEnabled: true, showBattery: true,
             stockEnabled: false, stockSymbols: "", stockRefreshSeconds: 300,
             claudeUsageEnabled: false,
+            claudeUsageMode: .today,
+            claudeUsageWeeklyGoalMTokens: 1000,
             rotationInterval: 10
         )
         let b = ContentSettingsSnapshot(
@@ -49,6 +63,8 @@ final class ContentSettingsSnapshotTests: XCTestCase {
             systemInfoEnabled: true, showBattery: true,
             stockEnabled: false, stockSymbols: "", stockRefreshSeconds: 300,
             claudeUsageEnabled: false,
+            claudeUsageMode: .today,
+            claudeUsageWeeklyGoalMTokens: 1000,
             rotationInterval: 10
         )
         XCTAssertEqual(a, b)
@@ -65,6 +81,8 @@ final class ContentSettingsSnapshotTests: XCTestCase {
         stockSymbols: String = "AAPL",
         stockRefreshSeconds: Int = 300,
         claudeUsageEnabled: Bool = false,
+        claudeUsageMode: ClaudeUsageMode = .today,
+        claudeUsageWeeklyGoalMTokens: Int = 1000,
         rotationInterval: Int = 10
     ) -> ContentSettingsSnapshot {
         ContentSettingsSnapshot(
@@ -76,6 +94,8 @@ final class ContentSettingsSnapshotTests: XCTestCase {
             stockSymbols: stockSymbols,
             stockRefreshSeconds: stockRefreshSeconds,
             claudeUsageEnabled: claudeUsageEnabled,
+            claudeUsageMode: claudeUsageMode,
+            claudeUsageWeeklyGoalMTokens: claudeUsageWeeklyGoalMTokens,
             rotationInterval: rotationInterval
         )
     }

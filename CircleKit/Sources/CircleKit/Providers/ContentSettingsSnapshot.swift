@@ -12,6 +12,8 @@ struct ContentSettingsSnapshot: Equatable {
     let stockSymbols: String
     let stockRefreshSeconds: Int
     let claudeUsageEnabled: Bool
+    let claudeUsageMode: ClaudeUsageMode
+    let claudeUsageWeeklyGoalMTokens: Int
     let rotationInterval: Int
 
     init(
@@ -23,6 +25,8 @@ struct ContentSettingsSnapshot: Equatable {
         stockSymbols: String,
         stockRefreshSeconds: Int,
         claudeUsageEnabled: Bool,
+        claudeUsageMode: ClaudeUsageMode,
+        claudeUsageWeeklyGoalMTokens: Int,
         rotationInterval: Int
     ) {
         self.clockEnabled = clockEnabled
@@ -33,6 +37,8 @@ struct ContentSettingsSnapshot: Equatable {
         self.stockSymbols = stockSymbols
         self.stockRefreshSeconds = stockRefreshSeconds
         self.claudeUsageEnabled = claudeUsageEnabled
+        self.claudeUsageMode = claudeUsageMode
+        self.claudeUsageWeeklyGoalMTokens = claudeUsageWeeklyGoalMTokens
         self.rotationInterval = rotationInterval
     }
 
@@ -46,6 +52,8 @@ struct ContentSettingsSnapshot: Equatable {
             stockSymbols: settings.stockSymbols,
             stockRefreshSeconds: settings.stockRefreshSeconds,
             claudeUsageEnabled: settings.claudeUsageEnabled,
+            claudeUsageMode: settings.claudeUsageMode,
+            claudeUsageWeeklyGoalMTokens: settings.claudeUsageWeeklyGoalMTokens,
             rotationInterval: settings.contentRotationInterval
         )
     }

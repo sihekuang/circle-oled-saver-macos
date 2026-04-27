@@ -482,7 +482,19 @@ private struct ContentPageContent: View {
             HStack(spacing: 12) {
                 Text("Display")
                     .frame(width: 90, alignment: .leading)
-                Picker("", selection: $settings.claudeUsageMode) {
+                // Defer the write to the next runloop tick. Writing directly
+                // to the @Published binding from a Picker selection mutation
+                // can fire objectWillChange.send() while SwiftUI is still
+                // processing the gesture, triggering the "Publishing changes
+                // from within view updates" warning.
+                Picker("", selection: Binding(
+                    get: { settings.claudeUsageMode },
+                    set: { newValue in
+                        DispatchQueue.main.async {
+                            settings.claudeUsageMode = newValue
+                        }
+                    }
+                )) {
                     Text("Today").tag(ClaudeUsageMode.today)
                     Text("This Week").tag(ClaudeUsageMode.week)
                 }
