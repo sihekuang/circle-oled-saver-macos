@@ -12,6 +12,7 @@ public final class MinimalTheme: Theme {
     private var textLayer = CATextLayer()
     private var time: CFTimeInterval = 0
     private var angle: CGFloat = CGFloat.random(in: 0...(2 * .pi))
+    private var textLineCount: Int = 1
 
     public init() {}
 
@@ -121,25 +122,12 @@ public final class MinimalTheme: Theme {
         glowLayer.shadowOpacity = Float(opacity * 0.3)
         glowLayer.shadowRadius = size * 0.3
 
-        // Layout text layers relative to circle bounds (CA coordinates: origin bottom-left)
-        let iconSize = size * 0.22
-        let textSize = size * 0.14
-
-        iconLayer.fontSize = iconSize
-        iconLayer.frame = CGRect(
-            x: 0,
-            y: size * 1.05,
-            width: size * 2,
-            height: iconSize * 1.5
-        )
-
-        textLayer.fontSize = textSize
-        textLayer.frame = CGRect(
-            x: 0,
-            y: size * 0.35,
-            width: size * 2,
-            height: size * 0.7
-        )
+        // Center the icon+text group vertically around the ball's midpoint.
+        let layout = CircleTextLayout.compute(size: size, lineCount: textLineCount)
+        iconLayer.fontSize = layout.iconFontSize
+        iconLayer.frame = layout.iconFrame
+        textLayer.fontSize = layout.textFontSize
+        textLayer.frame = layout.textFrame
 
         iconLayer.opacity = Float(opacity)
         textLayer.opacity = Float(opacity)
@@ -165,9 +153,11 @@ public final class MinimalTheme: Theme {
                 .paragraphStyle: paragraphStyle
             ], range: NSRange(location: 0, length: attributed.length))
             textLayer.string = attributed
+            textLineCount = CircleTextLayout.lineCount(of: content.text)
         } else {
             iconLayer.string = nil
             textLayer.string = nil
+            textLineCount = 1
         }
 
         CATransaction.commit()
