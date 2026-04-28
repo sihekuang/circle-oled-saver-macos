@@ -39,41 +39,6 @@ final class ContentSettingsSnapshotTests: XCTestCase {
         XCTAssertNotEqual(a, b)
     }
 
-    func testClaudeUsageWeeklyGoalChangeChangesSnapshot() {
-        let a = makeSnapshot(claudeUsageWeeklyGoalMTokens: 100)
-        let b = makeSnapshot(claudeUsageWeeklyGoalMTokens: 500)
-        XCTAssertNotEqual(a, b)
-    }
-
-    func testNonContentSettingsAreNotInSnapshot() {
-        // Snapshot should ignore ball physics, theme, hotkeys, etc. The
-        // exhaustive list of fields lives in the struct definition; this test
-        // just guards against accidentally adding e.g. ballSize to the snapshot.
-        let a = ContentSettingsSnapshot(
-            clockEnabled: true, clockFormat24h: false,
-            systemInfoEnabled: true, showBattery: true,
-            stockEnabled: false, stockSymbols: "", stockRefreshSeconds: 300,
-            claudeUsageEnabled: false,
-            claudeUsageMode: .today,
-            claudeUsageAuthMode: .local,
-            claudeUsageWeeklyGoalMTokens: 1000,
-            rotationInterval: 10
-        )
-        let b = ContentSettingsSnapshot(
-            clockEnabled: true, clockFormat24h: false,
-            systemInfoEnabled: true, showBattery: true,
-            stockEnabled: false, stockSymbols: "", stockRefreshSeconds: 300,
-            claudeUsageEnabled: false,
-            claudeUsageMode: .today,
-            claudeUsageAuthMode: .local,
-            claudeUsageWeeklyGoalMTokens: 1000,
-            rotationInterval: 10
-        )
-        XCTAssertEqual(a, b)
-    }
-
-    // MARK: - Helpers
-
     private func makeSnapshot(
         clockEnabled: Bool = true,
         clockFormat24h: Bool = false,
@@ -84,8 +49,6 @@ final class ContentSettingsSnapshotTests: XCTestCase {
         stockRefreshSeconds: Int = 300,
         claudeUsageEnabled: Bool = false,
         claudeUsageMode: ClaudeUsageMode = .today,
-        claudeUsageAuthMode: ClaudeUsageAuthMode = .local,
-        claudeUsageWeeklyGoalMTokens: Int = 1000,
         rotationInterval: Int = 10
     ) -> ContentSettingsSnapshot {
         ContentSettingsSnapshot(
@@ -98,8 +61,6 @@ final class ContentSettingsSnapshotTests: XCTestCase {
             stockRefreshSeconds: stockRefreshSeconds,
             claudeUsageEnabled: claudeUsageEnabled,
             claudeUsageMode: claudeUsageMode,
-            claudeUsageAuthMode: claudeUsageAuthMode,
-            claudeUsageWeeklyGoalMTokens: claudeUsageWeeklyGoalMTokens,
             rotationInterval: rotationInterval
         )
     }

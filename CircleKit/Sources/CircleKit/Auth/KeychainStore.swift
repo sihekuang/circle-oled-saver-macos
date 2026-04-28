@@ -1,17 +1,18 @@
 import Foundation
 import Security
 
-/// Small wrapper around macOS Keychain for storing a single secret string per
-/// service. Used to persist the Anthropic OAuth token the user pastes into
-/// Settings.
+/// Small wrapper around macOS Keychain (Keychain Services) for storing a single
+/// secret string per service. Used to persist the Anthropic credential the
+/// user pastes into Settings — either an OAuth access token or an Admin API
+/// key.
 public enum KeychainStore {
     public enum KeychainError: Error {
         case unexpectedStatus(OSStatus)
     }
 
-    /// The keychain service identifier for Circle's stored Anthropic OAuth
-    /// token. Both CircleApp and CircleSaver read from this same service.
-    public static let claudeOAuthService = "com.shoebillsoft.circle.claude-oauth"
+    /// Keychain service identifier for Circle's stored Anthropic credential.
+    /// Both CircleApp and CircleSaver read from this same service.
+    public static let claudeCredentialService = "com.shoebillsoft.circle.claude-credential"
 
     /// Fetches the secret stored under `service`, or nil if absent.
     public static func get(service: String) -> String? {
