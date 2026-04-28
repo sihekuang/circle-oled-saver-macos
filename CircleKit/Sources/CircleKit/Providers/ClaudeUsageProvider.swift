@@ -28,28 +28,18 @@ public final class ClaudeUsageProvider: BaseContentProvider {
     }
 
     public override func fetchData() async {
-        switch usageClient.currentTokenType() {
-        case .oauth:
-            cachedData = await fetchOAuth()
-        case .admin:
-            cachedData = await fetchAdmin()
-        case .unknown:
-            cachedData = ContentData(icon: "\u{2728}", text: "Claude\npaste key")
-        }
-    }
-
-    // MARK: - OAuth (subscription utilization)
-
-    private func fetchOAuth() async -> ContentData {
         let usage: AnthropicUsage
         do {
             usage = try await usageClient.fetchUsage()
         } catch AnthropicUsageClient.ClientError.missingToken {
-            return ContentData(icon: "\u{2728}", text: "Claude\npaste key")
+            cachedData = ContentData(icon: "\u{2728}", text: "Claude\nsign in to CC")
+            return
         } catch AnthropicUsageClient.ClientError.http(let status, _) where status == 401 {
-            return ContentData(icon: "\u{2728}", text: "Claude\nre-paste key")
+            cachedData = ContentData(icon: "\u{2728}", text: "Claude\nsign in to CC")
+            return
         } catch {
-            return ContentData(icon: "\u{2728}", text: "Claude\noffline")
+            cachedData = ContentData(icon: "\u{2728}", text: "Claude\noffline")
+            return
         }
 
         let bucket: AnthropicUsage.Bucket?
@@ -64,80 +54,25 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         }
 
         guard let bucket else {
-            return ContentData(icon: "\u{2728}", text: "Claude\nno data")
+            cachedData = ContentData(icon: "\u{2728}", text: "Claude\nno data")
+            return
         }
 
         let pct = Int(bucket.utilization.rounded())
         if let resetsAt = bucket.resetsAt {
             let remaining = max(0, resetsAt.timeIntervalSince(clock()))
-            return ContentData(
+            cachedData = ContentData(
                 icon: "\u{2728}",
                 text: "Claude\n\(pct)% \(label)\n\(Self.formatTimeRemaining(seconds: remaining)) left"
             )
+        } else {
+            cachedData = ContentData(icon: "\u{2728}", text: "Claude\n\(pct)% \(label)")
         }
-        return ContentData(icon: "\u{2728}", text: "Claude\n\(pct)% \(label)")
-    }
-
-    // MARK: - Admin (organization cost in USD)
-
-    private func fetchAdmin() async -> ContentData {
-        let now = clock()
-        let (start, end, label) = Self.adminWindow(mode: mode, now: now)
-
-        let usd: Double
-        do {
-            usd = try await usageClient.fetchCostUSD(start: start, end: end)
-        } catch AnthropicUsageClient.ClientError.missingToken {
-            return ContentData(icon: "\u{2728}", text: "Claude\npaste key")
-        } catch AnthropicUsageClient.ClientError.http(let status, _) where status == 401 {
-            return ContentData(icon: "\u{2728}", text: "Claude\nre-paste key")
-        } catch {
-            return ContentData(icon: "\u{2728}", text: "Claude\noffline")
-        }
-
-        return ContentData(
-            icon: "\u{2728}",
-            text: "Claude\n\(Self.formatUSD(usd)) \(label)"
-        )
-    }
-
-    /// Time range and label for an admin cost query in the current mode.
-    /// Both bounds are UTC-aligned to whole days because `cost_report` only
-    /// supports `bucket_width=1d`.
-    public static func adminWindow(mode: ClaudeUsageMode, now: Date) -> (start: Date, end: Date, label: String) {
-        var utc = Calendar(identifier: .gregorian)
-        utc.timeZone = TimeZone(identifier: "UTC")!
-        let startOfToday = utc.startOfDay(for: now)
-        let startOfTomorrow = utc.date(byAdding: .day, value: 1, to: startOfToday)!
-        switch mode {
-        case .today:
-            return (startOfToday, startOfTomorrow, "today")
-        case .week:
-            let start = utc.date(byAdding: .day, value: -6, to: startOfToday)!
-            return (start, startOfTomorrow, "week")
-        }
-    }
-
-    /// Compact USD formatting for the screensaver:
-    /// `$0.42` / `$4.30` / `$123.45` (always two decimals up to $999.99).
-    /// At/above $1,000 it drops the cents and adds a thousands separator —
-    /// `$1,234`. No locale-dependent characters; the screensaver renders a
-    /// fixed font.
-    public static func formatUSD(_ usd: Double) -> String {
-        if usd >= 1000 {
-            let whole = Int(usd.rounded())
-            let formatter = NumberFormatter()
-            formatter.numberStyle = .decimal
-            formatter.usesGroupingSeparator = true
-            formatter.groupingSeparator = ","
-            return "$" + (formatter.string(from: NSNumber(value: whole)) ?? "\(whole)")
-        }
-        return String(format: "$%.2f", usd)
     }
 
     /// Compact "Xh Ym" / "Xh" / "Xm" countdown. Ceil to whole minutes so a
     /// few seconds remaining still renders as "1m" instead of "0m".
-    static func formatTimeRemaining(seconds: TimeInterval) -> String {
+    public static func formatTimeRemaining(seconds: TimeInterval) -> String {
         let totalMinutes = Int((seconds / 60).rounded(.up))
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60
