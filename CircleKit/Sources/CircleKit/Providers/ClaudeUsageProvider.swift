@@ -68,7 +68,11 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         case .today:
             let dailyTarget = Double(weeklyGoalTokens) / 7
             let pct = Int((Double(totals.today) / dailyTarget) * 100)
-            return ContentData(icon: "\u{2728}", text: "Claude\n\(pct)% today")
+            let reset = Self.formatTimeRemaining(seconds: Self.secondsUntilMidnight(from: now))
+            return ContentData(
+                icon: "\u{2728}",
+                text: "Claude\n\(pct)% today\n\(reset) left"
+            )
         case .week:
             let pct = Int((Double(totals.week) / Double(weeklyGoalTokens)) * 100)
             return ContentData(icon: "\u{2728}", text: "Claude\n\(pct)% week")
@@ -113,6 +117,14 @@ public final class ClaudeUsageProvider: BaseContentProvider {
             )
         }
         return ContentData(icon: "\u{2728}", text: "Claude\n\(pct)% \(label)")
+    }
+
+    /// Seconds until next local midnight from `date`. Used for the Local-mode
+    /// Today countdown.
+    static func secondsUntilMidnight(from date: Date) -> TimeInterval {
+        let calendar = Calendar.current
+        let tomorrow = calendar.startOfDay(for: date.addingTimeInterval(86400))
+        return max(0, tomorrow.timeIntervalSince(date))
     }
 
     // MARK: - Aggregation
