@@ -472,25 +472,23 @@ private struct ContentPageContent: View {
         }
 
         SettingsSection("Claude Usage") {
-            Toggle("Show Claude Token Usage", isOn: $settings.claudeUsageEnabled)
+            ClaudeUsageSettings(settings: settings)
+        }
+    }
+}
 
-            HStack(spacing: 12) {
-                Text("Source")
-                    .frame(width: 90, alignment: .leading)
-                Picker("", selection: Binding(
-                    get: { settings.claudeUsageAuthMode },
-                    set: { newValue in
-                        DispatchQueue.main.async {
-                            settings.claudeUsageAuthMode = newValue
-                        }
-                    }
-                )) {
-                    Text("Local").tag(ClaudeUsageAuthMode.local)
-                    Text("Anthropic").tag(ClaudeUsageAuthMode.anthropic)
-                }
-                .pickerStyle(.segmented)
-            }
-            .disabled(!settings.claudeUsageEnabled)
+// MARK: - Claude Usage section
+
+private struct ClaudeUsageSettings: View {
+    @ObservedObject var settings: SettingsManager
+    @State private var token: String = ""
+    @State private var status: String = ""
+    @State private var statusColor: Color = .secondary
+    @State private var storedTokenType: AnthropicTokenType = .unknown
+
+    var body: some View {
+        Group {
+            Toggle("Show Claude Usage", isOn: $settings.claudeUsageEnabled)
 
             HStack(spacing: 12) {
                 Text("Display")
@@ -503,101 +501,49 @@ private struct ContentPageContent: View {
                         }
                     }
                 )) {
-                    Text(settings.claudeUsageAuthMode == .anthropic ? "Session" : "Today")
-                        .tag(ClaudeUsageMode.today)
-                    Text(settings.claudeUsageAuthMode == .anthropic ? "Weekly" : "This Week")
-                        .tag(ClaudeUsageMode.week)
+                    Text(displayLabels.today).tag(ClaudeUsageMode.today)
+                    Text(displayLabels.week).tag(ClaudeUsageMode.week)
                 }
                 .pickerStyle(.segmented)
             }
             .disabled(!settings.claudeUsageEnabled)
 
-            if settings.claudeUsageAuthMode == .local {
-                ClaudeUsageLocalSettings(settings: settings)
-            } else {
-                ClaudeUsageAnthropicSettings(settings: settings)
-            }
-        }
-    }
-}
-
-// MARK: - Claude Usage: Local sub-section
-
-private struct ClaudeUsageLocalSettings: View {
-    @ObservedObject var settings: SettingsManager
-
-    var body: some View {
-        Group {
-            Text("Aggregates Claude tokens used on this Mac via the Claude Code CLI (reads ~/.claude/projects). Tokens used through the web app or other devices are not included.")
+            Text("Paste a Claude credential — either an OAuth access token from Claude Code (`sk-ant-oat...`, shows subscription quota %) or an Admin API key from the Console (`sk-ant-admin...`, shows organization cost in USD). Stored in your macOS Keychain.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            LabeledSlider(
-                label: "Weekly Goal",
-                value: Binding(
-                    get: { Double(settings.claudeUsageWeeklyGoalMTokens) },
-                    set: { settings.claudeUsageWeeklyGoalMTokens = Int($0) }
-                ),
-                range: 100...10000,
-                step: 100,
-                suffix: "M",
-                valueWidth: 60
-            )
-            .disabled(!settings.claudeUsageEnabled)
+            adminWarning
 
-            HStack {
-                Spacer()
-                Button("Suggest from last 4 weeks") {
-                    Task.detached(priority: .userInitiated) {
-                        let suggested = ClaudeUsageProvider.suggestWeeklyGoalMTokens()
-                        await MainActor.run {
-                            SettingsManager.shared.claudeUsageWeeklyGoalMTokens = suggested
-                        }
+            DisclosureGroup("How to get a credential") {
+                VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("OAuth (subscription users):").font(.caption).fontWeight(.semibold)
+                        Text("Run in Terminal — copies the token to your clipboard:")
+                            .font(.caption)
+                        Text(oauthExtractCommand)
+                            .font(.system(.caption, design: .monospaced))
+                            .padding(8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.black.opacity(0.25))
+                            .cornerRadius(6)
+                            .textSelection(.enabled)
+                        Text("OAuth tokens expire after about a day; re-run when the display says \u{201C}re-paste key\u{201D}.")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                     }
-                }
-                .disabled(!settings.claudeUsageEnabled)
-            }
-        }
-    }
-}
-
-// MARK: - Claude Usage: Anthropic sub-section
-
-private struct ClaudeUsageAnthropicSettings: View {
-    @ObservedObject var settings: SettingsManager
-    @State private var token: String = ""
-    @State private var status: String = ""
-    @State private var statusColor: Color = .secondary
-
-    var body: some View {
-        Group {
-            Text("Shows your real Claude subscription quota — same numbers as the Claude Desktop app. Paste your OAuth access token below. The token is stored in your macOS Keychain.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            DisclosureGroup("How to get your token") {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Run this in Terminal — the token will be copied to your clipboard:")
-                        .font(.caption)
-                    Text(extractCommand)
-                        .font(.system(.caption, design: .monospaced))
-                        .padding(8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.black.opacity(0.25))
-                        .cornerRadius(6)
-                        .textSelection(.enabled)
-                    Text("Tokens expire after about a day. When that happens, this content will say \u{201C}re-paste token\u{201D} — re-run the command and paste again.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Admin API key (paid API users):").font(.caption).fontWeight(.semibold)
+                        Text("Create at console.anthropic.com → Settings → Admin Keys (org admins only). Admin keys do not expire automatically.")
+                            .font(.caption)
+                    }
                 }
                 .padding(.top, 4)
             }
             .font(.caption)
 
             HStack(spacing: 8) {
-                SecureField("sk-ant-oat01-...", text: $token)
+                SecureField("sk-ant-oat01-... or sk-ant-admin...", text: $token)
                     .textFieldStyle(.roundedBorder)
                 Button("Paste") {
                     if let pasted = NSPasteboard.general.string(forType: .string) {
@@ -611,7 +557,7 @@ private struct ClaudeUsageAnthropicSettings: View {
                 Button("Test") {
                     Task { await testToken() }
                 }
-                .disabled(!hasStoredToken)
+                .disabled(storedTokenType == .unknown)
             }
             .disabled(!settings.claudeUsageEnabled)
 
@@ -621,38 +567,92 @@ private struct ClaudeUsageAnthropicSettings: View {
                     .foregroundColor(statusColor)
             }
 
-            if hasStoredToken {
-                Button("Clear stored token") {
-                    KeychainStore.delete(service: KeychainStore.claudeOAuthService)
-                    token = ""
-                    status = "Token removed."
-                    statusColor = .secondary
+            if storedTokenType != .unknown {
+                HStack(spacing: 8) {
+                    Text(storedDescription)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Button("Clear stored key") {
+                        KeychainStore.delete(service: KeychainStore.claudeCredentialService)
+                        token = ""
+                        status = "Key removed."
+                        statusColor = .secondary
+                        refreshStoredType()
+                    }
+                    .font(.caption)
+                    .disabled(!settings.claudeUsageEnabled)
                 }
-                .font(.caption)
-                .disabled(!settings.claudeUsageEnabled)
             }
+        }
+        .onAppear { refreshStoredType() }
+    }
+
+    private var displayLabels: (today: String, week: String) {
+        switch storedTokenType {
+        case .admin: return ("Today", "Week")
+        case .oauth: return ("Session", "Weekly")
+        case .unknown: return ("Today", "Week")
         }
     }
 
-    private var hasStoredToken: Bool {
-        KeychainStore.get(service: KeychainStore.claudeOAuthService) != nil
+    @ViewBuilder
+    private var adminWarning: some View {
+        let typed = AnthropicTokenType(rawToken: token)
+        if typed == .admin || storedTokenType == .admin {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "exclamationmark.shield.fill")
+                    .foregroundColor(.orange)
+                Text("Admin API keys grant full organization-level access (members, billing, all workspaces). Circle only reads `/cost_report` and never transmits the key off your machine, but a leaked admin key is a serious incident. Prefer a dedicated key you can rotate.")
+                    .font(.caption)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.orange.opacity(0.15))
+            )
+        }
     }
 
-    private var extractCommand: String {
-        // Single line so it can be copied verbatim.
+    private var storedDescription: String {
+        switch storedTokenType {
+        case .oauth: return "Stored: OAuth token (subscription)"
+        case .admin: return "Stored: Admin API key (organization)"
+        case .unknown: return ""
+        }
+    }
+
+    private var oauthExtractCommand: String {
         "security find-generic-password -s 'Claude Code-credentials' -a \"$USER\" -w | python3 -c \"import json,sys;print(json.load(sys.stdin)['claudeAiOauth']['accessToken'])\" | pbcopy"
     }
 
+    private func refreshStoredType() {
+        if let raw = KeychainStore.get(service: KeychainStore.claudeCredentialService), !raw.isEmpty {
+            storedTokenType = AnthropicTokenType(rawToken: raw)
+        } else {
+            storedTokenType = .unknown
+        }
+    }
+
     private func saveToken() {
+        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        let detected = AnthropicTokenType(rawToken: trimmed)
+        guard detected != .unknown else {
+            status = "Unrecognized key prefix — expected sk-ant-oat... or sk-ant-admin..."
+            statusColor = .red
+            return
+        }
         do {
-            try KeychainStore.set(token, service: KeychainStore.claudeOAuthService)
-            status = "Token saved to Keychain. Tap Test to verify."
+            try KeychainStore.set(trimmed, service: KeychainStore.claudeCredentialService)
+            status = "Saved to Keychain. Tap Test to verify."
             statusColor = .secondary
-            token = ""  // clear the field so it isn't visible after save
-            // Nudge the running provider to rebuild on next settings observer pass.
-            settings.claudeUsageAuthMode = settings.claudeUsageAuthMode  // re-publish
+            token = ""
+            refreshStoredType()
+            settings.claudeUsageMode = settings.claudeUsageMode  // re-publish to nudge provider rebuild
         } catch {
-            status = "Couldn't save token: \(error)"
+            status = "Couldn't save: \(error)"
             statusColor = .red
         }
     }
@@ -662,15 +662,30 @@ private struct ClaudeUsageAnthropicSettings: View {
         statusColor = .secondary
         let client = AnthropicUsageClient()
         do {
-            let usage = try await client.fetchUsage()
-            let week = usage.sevenDay.map { "\(Int($0.utilization.rounded()))% week" } ?? "no weekly data"
-            status = "OK — \(week)"
-            statusColor = .green
+            switch client.currentTokenType() {
+            case .oauth:
+                let usage = try await client.fetchUsage()
+                let week = usage.sevenDay.map { "\(Int($0.utilization.rounded()))% week" } ?? "no weekly data"
+                status = "OK — \(week)"
+                statusColor = .green
+            case .admin:
+                let now = Date()
+                let (start, end, _) = ClaudeUsageProvider.adminWindow(mode: .today, now: now)
+                let usd = try await client.fetchCostUSD(start: start, end: end)
+                status = "OK — \(ClaudeUsageProvider.formatUSD(usd)) today"
+                statusColor = .green
+            case .unknown:
+                status = "No key saved yet."
+                statusColor = .red
+            }
         } catch AnthropicUsageClient.ClientError.missingToken {
-            status = "No token saved yet."
+            status = "No key saved yet."
+            statusColor = .red
+        } catch AnthropicUsageClient.ClientError.unsupportedTokenType {
+            status = "Unrecognized key prefix."
             statusColor = .red
         } catch AnthropicUsageClient.ClientError.http(let code, _) {
-            status = "Server returned \(code). Token may be expired — re-paste."
+            status = "Server returned \(code). Key may be invalid or expired."
             statusColor = .red
         } catch {
             status = "Failed: \(error)"

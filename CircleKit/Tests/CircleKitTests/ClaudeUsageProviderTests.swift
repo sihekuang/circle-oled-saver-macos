@@ -2,327 +2,298 @@ import XCTest
 @testable import CircleKit
 
 final class ClaudeUsageProviderTests: XCTestCase {
-    private var tempDir: URL!
-
-    /// Goal of 7000 tokens → daily share = 1000 tokens. Gives clean percentages
-    /// in tests (e.g., 250 used = 25%, 1000 = 100%).
-    private let testWeeklyGoal = 7000
 
     override func setUp() {
         super.setUp()
-        tempDir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("circle-tests-\(UUID().uuidString)")
-        try! FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        MockURLProtocol.responder = nil
     }
 
     override func tearDown() {
-        try? FileManager.default.removeItem(at: tempDir)
+        MockURLProtocol.responder = nil
         super.tearDown()
     }
 
-    // MARK: - Failure modes
+    // MARK: - No stored credential
 
-    func testProjectsDirMissing() async {
-        let missing = tempDir.appendingPathComponent("does-not-exist")
-        let provider = ClaudeUsageProvider(
-            projectsDir: missing,
-            clock: fixedClock("2026-04-26"),
-            mode: .today,
-            weeklyGoalTokens: testWeeklyGoal
+    func testNoTokenShowsPasteKey() async {
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { nil }
         )
+        let provider = ClaudeUsageProvider(mode: .today, usageClient: client)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today\n24h left")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\npaste key")
     }
 
-    func testNoJSONLFiles() async throws {
-        try makeProject("empty")
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today\n24h left")
-    }
-
-    func testIgnoresMalformedLines() async throws {
-        try writeSession("p1", "session1", lines: [
-            "this is not json",
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 100, output: 100, cacheRead: 999, cacheCreate: 50),
-            "",
-            "{ broken: json",
-        ])
-        // Active = 100 + 100 + 50 = 250 (cacheRead excluded). Daily share = 1000. -> 25%
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today\n24h left")
-    }
-
-    func testTodayWithoutGoalShowsHint() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
-        ])
-        let provider = ClaudeUsageProvider(
-            projectsDir: tempDir,
-            clock: fixedClock("2026-04-26"),
-            mode: .today,
-            weeklyGoalTokens: 0
+    func testEmptyTokenShowsPasteKey() async {
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "   " }
         )
+        let provider = ClaudeUsageProvider(mode: .today, usageClient: client)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\nset goal")
+        // Trimmed empty → unknown → paste key. Detection trims whitespace.
+        XCTAssertEqual(provider.cachedData?.text, "Claude\npaste key")
     }
 
-    func testWeekWithoutGoalShowsHint() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
-        ])
-        let provider = ClaudeUsageProvider(
-            projectsDir: tempDir,
-            clock: fixedClock("2026-04-26"),
-            mode: .week,
-            weeklyGoalTokens: 0
+    // MARK: - OAuth path (utilization %)
+
+    func testOAuthTodayShowsSessionPercentage() async {
+        MockURLProtocol.responder = { request in
+            XCTAssertEqual(request.url?.host, "api.anthropic.com")
+            XCTAssertEqual(request.url?.path, "/api/oauth/usage")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer sk-ant-oat01-test")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "anthropic-beta"), "oauth-2025-04-20")
+            let body = #"{"five_hour":{"utilization":33.0,"resets_at":"2026-04-28T18:00:00+00:00"},"seven_day":{"utilization":48.0,"resets_at":"2026-04-30T00:00:00+00:00"}}"#
+            return (Data(body.utf8), Self.ok(request.url!))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-test" }
         )
+        let now = isoDate("2026-04-28T12:00:00Z")
+        let provider = ClaudeUsageProvider(clock: { now }, mode: .today, usageClient: client)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\nset goal")
+        // 18:00 - 12:00 = 6h until reset.
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n33% session\n6h left")
     }
 
-    // MARK: - Today percentage
-
-    func testTodayBelow100() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 100, output: 100, cacheRead: 0, cacheCreate: 50),
-        ])
-        // 250 / 1000 = 25%
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today\n24h left")
-    }
-
-    func testTodayExactly100() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
-        ])
-        // 1000 / 1000 = 100%
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n100% today\n24h left")
-    }
-
-    func testTodayAbove100() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 2500, cacheRead: 0, cacheCreate: 0),
-        ])
-        // 2500 / 1000 = 250%
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n250% today\n24h left")
-    }
-
-    func testTodaySumsAcrossProjectsAndFiles() async throws {
-        try writeSession("p1", "s1", lines: [
-            assistantLine(timestamp: "2026-04-26T08:00:00Z", input: 0, output: 200, cacheRead: 0, cacheCreate: 0),
-        ])
-        try writeSession("p1", "s2", lines: [
-            assistantLine(timestamp: "2026-04-26T09:00:00Z", input: 0, output: 300, cacheRead: 0, cacheCreate: 0),
-        ])
-        try writeSession("p2", "s1", lines: [
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 500, cacheRead: 0, cacheCreate: 0),
-        ])
-        // 200 + 300 + 500 = 1000 -> 100%
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n100% today\n24h left")
-    }
-
-    func testCacheReadsAreExcluded() async throws {
-        // Cache reads inflate the raw count without representing real usage.
-        // Verify they're dropped from the active total.
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 250, cacheRead: 999_999_999, cacheCreate: 0),
-        ])
-        // 250 / 1000 = 25% (cacheRead ignored)
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today\n24h left")
-    }
-
-    func testTodayIgnoresOtherDates() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-25T23:59:59Z", input: 0, output: 0, cacheRead: 999_999, cacheCreate: 0),
-            assistantLine(timestamp: "2026-04-27T00:00:00Z", input: 0, output: 0, cacheRead: 999_999, cacheCreate: 0),
-        ])
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today\n24h left")
-    }
-
-    func testTodayIgnoresNonAssistantEntries() async throws {
-        try writeSession("p1", "session1", lines: [
-            #"{"type":"user","timestamp":"2026-04-26T10:00:00Z","message":{"usage":{"input_tokens":999999}}}"#,
-            #"{"type":"system","timestamp":"2026-04-26T10:00:00Z"}"#,
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 250, cacheRead: 0, cacheCreate: 0),
-        ])
-        // Only the assistant line counts: 250 / 1000 = 25%
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today\n24h left")
-    }
-
-    // MARK: - Week percentage
-
-    func testWeekBelow100() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 1750, cacheRead: 0, cacheCreate: 0),
-        ])
-        // 1750 / 7000 = 25%
-        let provider = makeProvider(date: "2026-04-26", mode: .week)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% week")
-    }
-
-    func testWeekAbove100() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 10_500, cacheRead: 0, cacheCreate: 0),
-        ])
-        // 10500 / 7000 = 150%
-        let provider = makeProvider(date: "2026-04-26", mode: .week)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n150% week")
-    }
-
-    func testWeekSumsLast7Days() async throws {
-        // 1000 today, 1000 yesterday, 1000 six days ago, 999_999 eight days ago (out of window)
-        try writeSession("p1", "today", lines: [
-            assistantLine(timestamp: "2026-04-26T12:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
-        ])
-        try writeSession("p1", "yesterday", lines: [
-            assistantLine(timestamp: "2026-04-25T12:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
-        ])
-        try writeSession("p1", "sixDaysAgo", lines: [
-            assistantLine(timestamp: "2026-04-20T12:00:00Z", input: 0, output: 1000, cacheRead: 0, cacheCreate: 0),
-        ])
-        try writeSession("p1", "eightDaysAgo", lines: [
-            assistantLine(timestamp: "2026-04-18T12:00:00Z", input: 0, output: 999_999, cacheRead: 0, cacheCreate: 0),
-        ])
-        // 3000 / 7000 = 42% (truncates from 42.85%)
-        let provider = makeProvider(date: "2026-04-26", mode: .week)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n42% week")
-    }
-
-    // MARK: - Icon
-
-    func testUsesSparkleIcon() async throws {
-        try writeSession("p1", "session1", lines: [
-            assistantLine(timestamp: "2026-04-26T10:00:00Z", input: 0, output: 1, cacheRead: 0, cacheCreate: 0),
-        ])
-        let provider = makeProvider(date: "2026-04-26", mode: .today)
-        await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.icon, "\u{2728}")
-    }
-
-    // MARK: - Time-until-midnight formatting
-
-    private func untilMidnight(_ date: Date) -> String {
-        ClaudeUsageProvider.formatTimeRemaining(seconds: ClaudeUsageProvider.secondsUntilMidnight(from: date))
-    }
-
-    func testFormatTimeUntilMidnightHoursAndMinutes() {
-        // 14:30 local → 9h 30m to midnight
-        let date = makeDate("2026-04-26", hour: 14, minute: 30)
-        XCTAssertEqual(untilMidnight(date), "9h 30m")
-    }
-
-    func testFormatTimeUntilMidnightOmitsZeroMinutes() {
-        // 19:00 → exactly 5h, no leftover minutes
-        let date = makeDate("2026-04-26", hour: 19, minute: 0)
-        XCTAssertEqual(untilMidnight(date), "5h")
-    }
-
-    func testFormatTimeUntilMidnight1HourLeft() {
-        // 23:00 → exactly 1h to midnight
-        let date = makeDate("2026-04-26", hour: 23, minute: 0)
-        XCTAssertEqual(untilMidnight(date), "1h")
-    }
-
-    func testFormatTimeUntilMidnightUnder1Hour() {
-        // 23:30 → 30m to midnight
-        let date = makeDate("2026-04-26", hour: 23, minute: 30)
-        XCTAssertEqual(untilMidnight(date), "30m")
-    }
-
-    func testFormatTimeUntilMidnightFewSecondsCeilsTo1m() {
-        // 23:59:30 → 30s remaining → ceil → "1m" (never display "0m" before midnight)
-        let date = makeDate("2026-04-26", hour: 23, minute: 59).addingTimeInterval(30)
-        XCTAssertEqual(untilMidnight(date), "1m")
-    }
-
-    func testTodayDisplayIncludesResetCountdown() async throws {
-        try writeSession("p1", "session1.jsonl", lines: [
-            assistantLine(timestamp: "2026-04-26T15:00:00Z", input: 0, output: 250, cacheRead: 0, cacheCreate: 0),
-        ])
-        let provider = ClaudeUsageProvider(
-            projectsDir: tempDir,
-            clock: { self.makeDate("2026-04-26", hour: 18, minute: 0) },
-            mode: .today,
-            weeklyGoalTokens: testWeeklyGoal
+    func testOAuthWeekShowsWeekPercentage() async {
+        MockURLProtocol.responder = { request in
+            let body = #"{"seven_day":{"utilization":48.0,"resets_at":"2026-04-28T03:00:00+00:00"}}"#
+            return (Data(body.utf8), Self.ok(request.url!))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-test" }
         )
+        let now = isoDate("2026-04-28T00:00:00Z")
+        let provider = ClaudeUsageProvider(clock: { now }, mode: .week, usageClient: client)
         await provider.fetchData()
-        // 18:00 → 6h to midnight. 250 / 1000 = 25%.
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today\n6h left")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n48% week\n3h left")
     }
 
-    func testWeekDisplayDoesNotIncludeResetCountdown() async throws {
-        try writeSession("p1", "session1.jsonl", lines: [
-            assistantLine(timestamp: "2026-04-26T15:00:00Z", input: 0, output: 1750, cacheRead: 0, cacheCreate: 0),
-        ])
-        let provider = ClaudeUsageProvider(
-            projectsDir: tempDir,
-            clock: { self.makeDate("2026-04-26", hour: 18, minute: 0) },
-            mode: .week,
-            weeklyGoalTokens: testWeeklyGoal
+    func testOAuth401ShowsRePaste() async {
+        MockURLProtocol.responder = { request in
+            return (Data("expired".utf8), Self.status(request.url!, 401))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-expired" }
         )
+        let provider = ClaudeUsageProvider(mode: .today, usageClient: client)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% week")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\nre-paste key")
+    }
+
+    func testOAuthServerErrorShowsOffline() async {
+        MockURLProtocol.responder = { request in
+            return (Data("oops".utf8), Self.status(request.url!, 500))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-test" }
+        )
+        let provider = ClaudeUsageProvider(mode: .today, usageClient: client)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\noffline")
+    }
+
+    // MARK: - Admin path (USD cost)
+
+    func testAdminTodayShowsDollarCost() async {
+        MockURLProtocol.responder = { request in
+            XCTAssertEqual(request.url?.host, "api.anthropic.com")
+            XCTAssertEqual(request.url?.path, "/v1/organizations/cost_report")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "x-api-key"), "sk-ant-admin01-test")
+            XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+            // amount is in CENTS as a decimal string. 430.00 cents = $4.30
+            let body = #"""
+            {
+              "data": [
+                {
+                  "starting_at": "2026-04-28T00:00:00Z",
+                  "ending_at": "2026-04-29T00:00:00Z",
+                  "results": [
+                    {"amount": "300.00", "currency": "USD"},
+                    {"amount": "130.00", "currency": "USD"}
+                  ]
+                }
+              ],
+              "has_more": false,
+              "next_page": null
+            }
+            """#
+            return (Data(body.utf8), Self.ok(request.url!))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-admin01-test" }
+        )
+        let now = isoDate("2026-04-28T12:00:00Z")
+        let provider = ClaudeUsageProvider(clock: { now }, mode: .today, usageClient: client)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n$4.30 today")
+    }
+
+    func testAdminWeekSumsAcrossBuckets() async {
+        MockURLProtocol.responder = { request in
+            // 7 days × 100 cents = 700 cents = $7.00
+            let bucket = """
+            {"starting_at":"2026-04-22T00:00:00Z","ending_at":"2026-04-23T00:00:00Z","results":[{"amount":"100.00","currency":"USD"}]}
+            """
+            let body = "{\"data\":[\(Array(repeating: bucket, count: 7).joined(separator: ","))],\"has_more\":false,\"next_page\":null}"
+            return (Data(body.utf8), Self.ok(request.url!))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-admin01-test" }
+        )
+        let now = isoDate("2026-04-28T12:00:00Z")
+        let provider = ClaudeUsageProvider(clock: { now }, mode: .week, usageClient: client)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n$7.00 week")
+    }
+
+    func testAdminPaginationFollowsNextPage() async {
+        var callCount = 0
+        MockURLProtocol.responder = { request in
+            callCount += 1
+            if callCount == 1 {
+                XCTAssertNil(request.url?.query?.contains("page=") == true ? "" : nil)
+                let body = #"""
+                {
+                  "data": [{"starting_at":"2026-04-28T00:00:00Z","ending_at":"2026-04-29T00:00:00Z","results":[{"amount":"500.00","currency":"USD"}]}],
+                  "has_more": true,
+                  "next_page": "page_two"
+                }
+                """#
+                return (Data(body.utf8), Self.ok(request.url!))
+            } else {
+                XCTAssertTrue(request.url?.query?.contains("page=page_two") ?? false)
+                let body = #"""
+                {
+                  "data": [{"starting_at":"2026-04-28T00:00:00Z","ending_at":"2026-04-29T00:00:00Z","results":[{"amount":"250.00","currency":"USD"}]}],
+                  "has_more": false,
+                  "next_page": null
+                }
+                """#
+                return (Data(body.utf8), Self.ok(request.url!))
+            }
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-admin01-test" }
+        )
+        let now = isoDate("2026-04-28T12:00:00Z")
+        let provider = ClaudeUsageProvider(clock: { now }, mode: .today, usageClient: client)
+        await provider.fetchData()
+        // 500 + 250 = 750 cents = $7.50
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n$7.50 today")
+        XCTAssertEqual(callCount, 2)
+    }
+
+    func testAdmin401ShowsRePaste() async {
+        MockURLProtocol.responder = { request in
+            (Data("bad".utf8), Self.status(request.url!, 401))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-admin01-bad" }
+        )
+        let provider = ClaudeUsageProvider(mode: .today, usageClient: client)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\nre-paste key")
+    }
+
+    // MARK: - adminWindow
+
+    func testAdminWindowToday() {
+        let now = isoDate("2026-04-28T15:30:00Z")
+        let (start, end, label) = ClaudeUsageProvider.adminWindow(mode: .today, now: now)
+        XCTAssertEqual(label, "today")
+        XCTAssertEqual(iso(start), "2026-04-28T00:00:00Z")
+        XCTAssertEqual(iso(end), "2026-04-29T00:00:00Z")
+    }
+
+    func testAdminWindowWeek() {
+        let now = isoDate("2026-04-28T15:30:00Z")
+        let (start, end, label) = ClaudeUsageProvider.adminWindow(mode: .week, now: now)
+        XCTAssertEqual(label, "week")
+        // 6 days back from start of today, end = start of tomorrow → 7-day window
+        XCTAssertEqual(iso(start), "2026-04-22T00:00:00Z")
+        XCTAssertEqual(iso(end), "2026-04-29T00:00:00Z")
+    }
+
+    // MARK: - formatUSD
+
+    func testFormatUSDZero() {
+        XCTAssertEqual(ClaudeUsageProvider.formatUSD(0), "$0.00")
+    }
+
+    func testFormatUSDSubDollar() {
+        XCTAssertEqual(ClaudeUsageProvider.formatUSD(0.42), "$0.42")
+    }
+
+    func testFormatUSDTwoDecimals() {
+        XCTAssertEqual(ClaudeUsageProvider.formatUSD(4.30), "$4.30")
+    }
+
+    func testFormatUSDTriDigit() {
+        XCTAssertEqual(ClaudeUsageProvider.formatUSD(123.45), "$123.45")
+    }
+
+    func testFormatUSDDropsCentsOver1000() {
+        XCTAssertEqual(ClaudeUsageProvider.formatUSD(1234.56), "$1,235")
     }
 
     // MARK: - Helpers
 
-    private func makeDate(_ ymd: String, hour: Int, minute: Int) -> Date {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm"
-        formatter.timeZone = TimeZone.current
-        return formatter.date(from: "\(ymd) \(String(format: "%02d:%02d", hour, minute))")!
+    private func stubSession() -> URLSession {
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        return URLSession(configuration: config)
     }
 
-    private func makeProject(_ name: String) throws {
-        try FileManager.default.createDirectory(
-            at: tempDir.appendingPathComponent(name),
-            withIntermediateDirectories: true
-        )
+    private func isoDate(_ s: String) -> Date {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: s)!
     }
 
-    private func writeSession(_ project: String, _ session: String, lines: [String]) throws {
-        let projectDir = tempDir.appendingPathComponent(project)
-        try FileManager.default.createDirectory(at: projectDir, withIntermediateDirectories: true)
-        let file = projectDir.appendingPathComponent("\(session).jsonl")
-        try lines.joined(separator: "\n").write(to: file, atomically: true, encoding: .utf8)
+    private func iso(_ d: Date) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.string(from: d)
     }
 
-    private func assistantLine(timestamp: String, input: Int, output: Int, cacheRead: Int, cacheCreate: Int) -> String {
-        #"{"type":"assistant","timestamp":"\#(timestamp)","message":{"usage":{"input_tokens":\#(input),"output_tokens":\#(output),"cache_read_input_tokens":\#(cacheRead),"cache_creation_input_tokens":\#(cacheCreate)}}}"#
+    private static func ok(_ url: URL) -> HTTPURLResponse {
+        HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
     }
 
-    private func makeProvider(date: String, mode: ClaudeUsageMode) -> ClaudeUsageProvider {
-        ClaudeUsageProvider(
-            projectsDir: tempDir,
-            clock: fixedClock(date),
-            mode: mode,
-            weeklyGoalTokens: testWeeklyGoal
-        )
+    private static func status(_ url: URL, _ code: Int) -> HTTPURLResponse {
+        HTTPURLResponse(url: url, statusCode: code, httpVersion: nil, headerFields: nil)!
+    }
+}
+
+// MARK: - URLProtocol stub
+
+final class MockURLProtocol: URLProtocol, @unchecked Sendable {
+    static var responder: ((URLRequest) -> (Data, HTTPURLResponse))?
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        guard let responder = MockURLProtocol.responder else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+        let (data, response) = responder(request)
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: data)
+        client?.urlProtocolDidFinishLoading(self)
     }
 
-    private func fixedClock(_ ymd: String) -> () -> Date {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone.current
-        let date = formatter.date(from: ymd)!
-        return { date }
-    }
+    override func stopLoading() {}
 }
