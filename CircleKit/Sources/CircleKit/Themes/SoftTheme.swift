@@ -13,6 +13,7 @@ public final class SoftTheme: Theme {
     private var morphPhase: CGFloat = CGFloat.random(in: 0...(2 * .pi))
     private var squish: CGFloat = 1
     private var squishTarget: CGFloat = 1
+    private var textLineCount: Int = 1
 
     // Pastel palette
     private let palette: [(h: CGFloat, s: CGFloat, l: CGFloat)] = [
@@ -164,27 +165,17 @@ public final class SoftTheme: Theme {
         }
         blobLayer.fillColor = color.cgColor
 
-        // Text positioning (relative to blob layer)
+        // Center the icon+text group vertically around the blob's center,
+        // accounting for the actual line count of the text.
         let localCenterX = position.x - blobBounds.origin.x
         let localCenterY = position.y - blobBounds.origin.y
-        let iconSize = size * 0.22
-        let textSize = size * 0.14
-
-        iconLayer.fontSize = iconSize
-        iconLayer.frame = CGRect(
-            x: localCenterX - size,
-            y: localCenterY + size * 0.1,
-            width: size * 2,
-            height: iconSize * 1.5
-        )
-
-        textLayer.fontSize = textSize
-        textLayer.frame = CGRect(
-            x: localCenterX - size,
-            y: localCenterY - size * 0.55,
-            width: size * 2,
-            height: size * 0.7
-        )
+        let layout = CircleTextLayout.compute(size: size, lineCount: textLineCount)
+        let dx = localCenterX - size
+        let dy = localCenterY - size
+        iconLayer.fontSize = layout.iconFontSize
+        iconLayer.frame = layout.iconFrame.offsetBy(dx: dx, dy: dy)
+        textLayer.fontSize = layout.textFontSize
+        textLayer.frame = layout.textFrame.offsetBy(dx: dx, dy: dy)
 
         iconLayer.opacity = Float(opacity)
         textLayer.opacity = Float(opacity)
@@ -210,9 +201,11 @@ public final class SoftTheme: Theme {
                 .paragraphStyle: paragraphStyle
             ], range: NSRange(location: 0, length: attributed.length))
             textLayer.string = attributed
+            textLineCount = CircleTextLayout.lineCount(of: content.text)
         } else {
             iconLayer.string = nil
             textLayer.string = nil
+            textLineCount = 1
         }
 
         CATransaction.commit()
