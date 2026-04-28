@@ -507,10 +507,19 @@ private struct ClaudeUsageSettings: View {
             }
             .disabled(!settings.claudeUsageEnabled)
 
-            Text("Reads your subscription quota from Claude Code's keychain entry on this Mac. Claude Code refreshes the access token automatically — Circle just reads whatever is current. Requires Claude Code installed and signed in.")
+            Text("Shows your Claude subscription quota by calling Anthropic's /api/oauth/usage endpoint with the OAuth token Claude Code stores in your keychain. The token is used only for that API request and never leaves your Mac. Requires Claude Code installed and signed in.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+
+            HStack(alignment: .top, spacing: 6) {
+                Image(systemName: "lock.shield")
+                    .font(.caption2)
+                Text("macOS will prompt the first time Circle reads Claude Code's keychain entry — that's macOS asking your permission to share data between two apps. Pick \u{201C}Always Allow\u{201D} and Circle won't ask again.")
+                    .font(.caption2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .foregroundColor(.secondary)
 
             HStack(spacing: 4) {
                 Image(systemName: "arrow.clockwise")
