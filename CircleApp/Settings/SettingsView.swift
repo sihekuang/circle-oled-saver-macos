@@ -512,6 +512,14 @@ private struct ClaudeUsageSettings: View {
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.caption2)
+                Text(refreshIntervalLabel)
+                    .font(.caption2)
+            }
+            .foregroundColor(.secondary)
+
             statusBanner
 
             HStack(spacing: 8) {
@@ -540,6 +548,15 @@ private struct ClaudeUsageSettings: View {
             .font(.caption)
         }
         .onAppear { refreshKeychainState() }
+    }
+
+    private var refreshIntervalLabel: String {
+        let minutes = Int(ClaudeUsageProvider.pollInterval / 60)
+        if minutes >= 1 {
+            return "Refreshes every \(minutes) min — kept conservative to avoid Anthropic's rate limit."
+        }
+        let seconds = Int(ClaudeUsageProvider.pollInterval)
+        return "Refreshes every \(seconds)s."
     }
 
     @ViewBuilder

@@ -3,7 +3,8 @@ import Foundation
 public final class ClaudeUsageProvider: BaseContentProvider {
     /// 5 minutes. Usage percentages move slowly; cheaper on the endpoint and
     /// well under any reasonable per-key rate limit.
-    public override var refreshInterval: TimeInterval { 300.0 }
+    public static let pollInterval: TimeInterval = 300.0
+    public override var refreshInterval: TimeInterval { Self.pollInterval }
 
     /// Fallback delay when the server rate-limits us without a Retry-After.
     static let defaultRateLimitBackoff: TimeInterval = 30 * 60
