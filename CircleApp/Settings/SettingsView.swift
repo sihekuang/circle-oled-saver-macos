@@ -487,7 +487,23 @@ private struct ClaudeUsageSettings: View {
 
     var body: some View {
         Group {
-            Toggle("Show Claude Usage", isOn: $settings.claudeUsageEnabled)
+            Toggle("Show Claude Usage", isOn: Binding(
+                get: { settings.claudeUsageEnabled },
+                set: { newValue in
+                    settings.claudeUsageEnabled = newValue
+                    if newValue {
+                        // First read of Claude Code's keychain entry — this is
+                        // the moment macOS shows the permission prompt. Doing
+                        // it here means the prompt fires while the user is in
+                        // Settings (with our explanation visible right above)
+                        // rather than later from the screensaver, out of context.
+                        refreshKeychainState()
+                    } else {
+                        keychainState = .unchecked
+                        testStatus = ""
+                    }
+                }
+            ))
 
             HStack(spacing: 12) {
                 Text("Display")
@@ -556,7 +572,6 @@ private struct ClaudeUsageSettings: View {
             }
             .font(.caption)
         }
-        .onAppear { refreshKeychainState() }
     }
 
     private var refreshIntervalLabel: String {
