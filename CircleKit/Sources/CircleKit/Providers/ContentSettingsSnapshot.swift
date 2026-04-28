@@ -13,6 +13,7 @@ struct ContentSettingsSnapshot: Equatable {
     let stockRefreshSeconds: Int
     let claudeUsageEnabled: Bool
     let claudeUsageMode: ClaudeUsageMode
+    let claudeUsageAuthMode: ClaudeUsageAuthMode
     let claudeUsageWeeklyGoalMTokens: Int
     let rotationInterval: Int
 
@@ -26,6 +27,7 @@ struct ContentSettingsSnapshot: Equatable {
         stockRefreshSeconds: Int,
         claudeUsageEnabled: Bool,
         claudeUsageMode: ClaudeUsageMode,
+        claudeUsageAuthMode: ClaudeUsageAuthMode,
         claudeUsageWeeklyGoalMTokens: Int,
         rotationInterval: Int
     ) {
@@ -38,6 +40,7 @@ struct ContentSettingsSnapshot: Equatable {
         self.stockRefreshSeconds = stockRefreshSeconds
         self.claudeUsageEnabled = claudeUsageEnabled
         self.claudeUsageMode = claudeUsageMode
+        self.claudeUsageAuthMode = claudeUsageAuthMode
         self.claudeUsageWeeklyGoalMTokens = claudeUsageWeeklyGoalMTokens
         self.rotationInterval = rotationInterval
     }
@@ -53,6 +56,7 @@ struct ContentSettingsSnapshot: Equatable {
             stockRefreshSeconds: settings.stockRefreshSeconds,
             claudeUsageEnabled: settings.claudeUsageEnabled,
             claudeUsageMode: settings.claudeUsageMode,
+            claudeUsageAuthMode: settings.claudeUsageAuthMode,
             claudeUsageWeeklyGoalMTokens: settings.claudeUsageWeeklyGoalMTokens,
             rotationInterval: settings.contentRotationInterval
         )
