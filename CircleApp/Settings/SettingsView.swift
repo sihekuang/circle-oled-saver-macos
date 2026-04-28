@@ -481,10 +481,9 @@ private struct ContentPageContent: View {
 
 private struct ClaudeUsageSettings: View {
     @ObservedObject var settings: SettingsManager
-    @State private var token: String = ""
-    @State private var status: String = ""
-    @State private var statusColor: Color = .secondary
-    @State private var storedTokenType: AnthropicTokenType = .unknown
+    @State private var keychainState: ClaudeCodeKeychainState = .unchecked
+    @State private var testStatus: String = ""
+    @State private var testStatusColor: Color = .secondary
 
     var body: some View {
         Group {
@@ -501,197 +500,179 @@ private struct ClaudeUsageSettings: View {
                         }
                     }
                 )) {
-                    Text(displayLabels.today).tag(ClaudeUsageMode.today)
-                    Text(displayLabels.week).tag(ClaudeUsageMode.week)
+                    Text("Session").tag(ClaudeUsageMode.today)
+                    Text("Weekly").tag(ClaudeUsageMode.week)
                 }
                 .pickerStyle(.segmented)
             }
             .disabled(!settings.claudeUsageEnabled)
 
-            Text("Paste a Claude credential — either an OAuth access token from Claude Code (`sk-ant-oat...`, shows subscription quota %) or an Admin API key from the Console (`sk-ant-admin...`, shows organization cost in USD). Stored in your macOS Keychain.")
+            Text("Reads your subscription quota from Claude Code's keychain entry on this Mac. Claude Code refreshes the access token automatically — Circle just reads whatever is current. Requires Claude Code installed and signed in.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            adminWarning
+            statusBanner
 
-            DisclosureGroup("How to get a credential") {
-                VStack(alignment: .leading, spacing: 10) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("OAuth (subscription users):").font(.caption).fontWeight(.semibold)
-                        Text("Run in Terminal — copies the token to your clipboard:")
-                            .font(.caption)
-                        Text(oauthExtractCommand)
-                            .font(.system(.caption, design: .monospaced))
-                            .padding(8)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.black.opacity(0.25))
-                            .cornerRadius(6)
-                            .textSelection(.enabled)
-                        Text("OAuth tokens expire after about a day; re-run when the display says \u{201C}re-paste key\u{201D}.")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Admin API key (paid API users):").font(.caption).fontWeight(.semibold)
-                        Text("Create at console.anthropic.com → Settings → Admin Keys (org admins only). Admin keys do not expire automatically.")
-                            .font(.caption)
-                    }
+            HStack(spacing: 8) {
+                Button("Check Connection") {
+                    runCheck()
+                }
+                .disabled(!settings.claudeUsageEnabled)
+                if !testStatus.isEmpty {
+                    Text(testStatus)
+                        .font(.caption)
+                        .foregroundColor(testStatusColor)
+                }
+                Spacer()
+            }
+
+            DisclosureGroup("Don't have Claude Code?") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Install Claude Code (the CLI) and sign in with a Claude subscription. The first time Circle reads the keychain, macOS will ask you to allow access — pick \u{201C}Always Allow\u{201D}.")
+                        .font(.caption)
+                    Text("If \u{201C}Allow\u{201D} prompts keep reappearing, that usually means CircleApp's signature changed (e.g. after a rebuild). Re-allow once.")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
                 }
                 .padding(.top, 4)
             }
             .font(.caption)
-
-            HStack(spacing: 8) {
-                SecureField("sk-ant-oat01-... or sk-ant-admin...", text: $token)
-                    .textFieldStyle(.roundedBorder)
-                Button("Paste") {
-                    if let pasted = NSPasteboard.general.string(forType: .string) {
-                        token = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
-                    }
-                }
-                Button("Save") {
-                    saveToken()
-                }
-                .disabled(token.isEmpty)
-                Button("Test") {
-                    Task { await testToken() }
-                }
-                .disabled(storedTokenType == .unknown)
-            }
-            .disabled(!settings.claudeUsageEnabled)
-
-            if !status.isEmpty {
-                Text(status)
-                    .font(.caption)
-                    .foregroundColor(statusColor)
-            }
-
-            if storedTokenType != .unknown {
-                HStack(spacing: 8) {
-                    Text(storedDescription)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Button("Clear stored key") {
-                        KeychainStore.delete(service: KeychainStore.claudeCredentialService)
-                        token = ""
-                        status = "Key removed."
-                        statusColor = .secondary
-                        refreshStoredType()
-                    }
-                    .font(.caption)
-                    .disabled(!settings.claudeUsageEnabled)
-                }
-            }
         }
-        .onAppear { refreshStoredType() }
-    }
-
-    private var displayLabels: (today: String, week: String) {
-        switch storedTokenType {
-        case .admin: return ("Today", "Week")
-        case .oauth: return ("Session", "Weekly")
-        case .unknown: return ("Today", "Week")
-        }
+        .onAppear { refreshKeychainState() }
     }
 
     @ViewBuilder
-    private var adminWarning: some View {
-        let typed = AnthropicTokenType(rawToken: token)
-        if typed == .admin || storedTokenType == .admin {
-            HStack(alignment: .top, spacing: 8) {
-                Image(systemName: "exclamationmark.shield.fill")
-                    .foregroundColor(.orange)
-                Text("Admin API keys grant full organization-level access (members, billing, all workspaces). Circle only reads `/cost_report` and never transmits the key off your machine, but a leaked admin key is a serious incident. Prefer a dedicated key you can rotate.")
-                    .font(.caption)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(10)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.orange.opacity(0.15))
+    private var statusBanner: some View {
+        switch keychainState {
+        case .unchecked:
+            EmptyView()
+        case .ok(let expiresIn):
+            statusRow(
+                icon: "checkmark.circle.fill",
+                color: .green,
+                text: "Claude Code signed in. Access token expires in \(expiresIn)."
+            )
+        case .okNoExpiry:
+            statusRow(
+                icon: "checkmark.circle.fill",
+                color: .green,
+                text: "Claude Code signed in."
+            )
+        case .notFound:
+            statusRow(
+                icon: "exclamationmark.circle.fill",
+                color: .orange,
+                text: "Claude Code keychain entry not found. Install Claude Code and sign in."
+            )
+        case .accessDenied:
+            statusRow(
+                icon: "lock.fill",
+                color: .orange,
+                text: "macOS denied keychain access. Tap Check Connection — when prompted, choose \u{201C}Always Allow\u{201D}."
+            )
+        case .error(let message):
+            statusRow(
+                icon: "exclamationmark.triangle.fill",
+                color: .red,
+                text: message
             )
         }
     }
 
-    private var storedDescription: String {
-        switch storedTokenType {
-        case .oauth: return "Stored: OAuth token (subscription)"
-        case .admin: return "Stored: Admin API key (organization)"
-        case .unknown: return ""
+    private func statusRow(icon: String, color: Color, text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: icon).foregroundColor(color)
+            Text(text)
+                .font(.caption)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(color.opacity(0.15))
+        )
+    }
+
+    private func refreshKeychainState() {
+        keychainState = readKeychainState()
+    }
+
+    private func runCheck() {
+        // Force a fresh read — this is what triggers the macOS Always-Allow
+        // prompt the first time, so it's a manual user action.
+        testStatus = "Checking…"
+        testStatusColor = .secondary
+        let state = readKeychainState()
+        keychainState = state
+        Task {
+            await pingUsageEndpoint(state: state)
         }
     }
 
-    private var oauthExtractCommand: String {
-        "security find-generic-password -s 'Claude Code-credentials' -a \"$USER\" -w | python3 -c \"import json,sys;print(json.load(sys.stdin)['claudeAiOauth']['accessToken'])\" | pbcopy"
-    }
-
-    private func refreshStoredType() {
-        if let raw = KeychainStore.get(service: KeychainStore.claudeCredentialService), !raw.isEmpty {
-            storedTokenType = AnthropicTokenType(rawToken: raw)
-        } else {
-            storedTokenType = .unknown
-        }
-    }
-
-    private func saveToken() {
-        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        let detected = AnthropicTokenType(rawToken: trimmed)
-        guard detected != .unknown else {
-            status = "Unrecognized key prefix — expected sk-ant-oat... or sk-ant-admin..."
-            statusColor = .red
+    private func pingUsageEndpoint(state: ClaudeCodeKeychainState) async {
+        switch state {
+        case .ok, .okNoExpiry:
+            break
+        default:
+            await MainActor.run {
+                testStatus = ""
+            }
             return
         }
+        let client = AnthropicUsageClient()
         do {
-            try KeychainStore.set(trimmed, service: KeychainStore.claudeCredentialService)
-            status = "Saved to Keychain. Tap Test to verify."
-            statusColor = .secondary
-            token = ""
-            refreshStoredType()
-            settings.claudeUsageMode = settings.claudeUsageMode  // re-publish to nudge provider rebuild
+            let usage = try await client.fetchUsage()
+            let week = usage.sevenDay.map { "\(Int($0.utilization.rounded()))% week" } ?? "no weekly data"
+            await MainActor.run {
+                testStatus = "OK — \(week)"
+                testStatusColor = .green
+            }
+        } catch AnthropicUsageClient.ClientError.http(let code, _) {
+            await MainActor.run {
+                testStatus = "Anthropic returned \(code). Try `claude` in Terminal to refresh sign-in."
+                testStatusColor = .red
+            }
         } catch {
-            status = "Couldn't save: \(error)"
-            statusColor = .red
+            await MainActor.run {
+                testStatus = "Network failed: \(error.localizedDescription)"
+                testStatusColor = .red
+            }
         }
     }
 
-    private func testToken() async {
-        status = "Testing…"
-        statusColor = .secondary
-        let client = AnthropicUsageClient()
-        do {
-            switch client.currentTokenType() {
-            case .oauth:
-                let usage = try await client.fetchUsage()
-                let week = usage.sevenDay.map { "\(Int($0.utilization.rounded()))% week" } ?? "no weekly data"
-                status = "OK — \(week)"
-                statusColor = .green
-            case .admin:
-                let now = Date()
-                let (start, end, _) = ClaudeUsageProvider.adminWindow(mode: .today, now: now)
-                let usd = try await client.fetchCostUSD(start: start, end: end)
-                status = "OK — \(ClaudeUsageProvider.formatUSD(usd)) today"
-                statusColor = .green
-            case .unknown:
-                status = "No key saved yet."
-                statusColor = .red
+    private func readKeychainState() -> ClaudeCodeKeychainState {
+        switch ClaudeCodeKeychain.read() {
+        case .success(let cred):
+            guard let expiresAt = cred.expiresAt else {
+                return .okNoExpiry
             }
-        } catch AnthropicUsageClient.ClientError.missingToken {
-            status = "No key saved yet."
-            statusColor = .red
-        } catch AnthropicUsageClient.ClientError.unsupportedTokenType {
-            status = "Unrecognized key prefix."
-            statusColor = .red
-        } catch AnthropicUsageClient.ClientError.http(let code, _) {
-            status = "Server returned \(code). Key may be invalid or expired."
-            statusColor = .red
-        } catch {
-            status = "Failed: \(error)"
-            statusColor = .red
+            let remaining = expiresAt.timeIntervalSinceNow
+            if remaining <= 0 {
+                // Expired but Claude Code should refresh on next CLI invocation.
+                return .error("Access token expired — open Claude Code to refresh, then check again.")
+            }
+            return .ok(expiresIn: ClaudeUsageProvider.formatTimeRemaining(seconds: remaining))
+        case .failure(.notFound):
+            return .notFound
+        case .failure(.accessDenied):
+            return .accessDenied
+        case .failure(.malformed(let why)):
+            return .error("Keychain entry exists but couldn't be parsed: \(why)")
+        case .failure(.unexpectedStatus(let status)):
+            return .error("Keychain returned status \(status).")
         }
     }
+}
+
+private enum ClaudeCodeKeychainState: Equatable {
+    case unchecked
+    case ok(expiresIn: String)
+    case okNoExpiry
+    case notFound
+    case accessDenied
+    case error(String)
 }
 
 // MARK: - About Page
