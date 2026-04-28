@@ -57,6 +57,9 @@ public struct AnthropicUsage: Decodable {
 public final class AnthropicUsageClient {
     public enum ClientError: Error {
         case missingToken
+        /// 429 from the server. `retryAfter` is parsed from the `Retry-After`
+        /// response header when present; nil means the server didn't tell us.
+        case rateLimited(retryAfter: TimeInterval?)
         case http(Int, String)
         case decoding(Error)
         case transport(Error)
@@ -93,6 +96,10 @@ public final class AnthropicUsageClient {
         }
 
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            if http.statusCode == 429 {
+                let retryAfter = Self.parseRetryAfter(http.value(forHTTPHeaderField: "Retry-After"))
+                throw ClientError.rateLimited(retryAfter: retryAfter)
+            }
             let body = String(data: data, encoding: .utf8) ?? ""
             throw ClientError.http(http.statusCode, body)
         }
@@ -102,5 +109,15 @@ public final class AnthropicUsageClient {
         } catch {
             throw ClientError.decoding(error)
         }
+    }
+
+    /// Parses an HTTP `Retry-After` header. Only the integer-seconds form is
+    /// recognized — HTTP-date form is rare in practice and would just default
+    /// to our fallback if missed.
+    static func parseRetryAfter(_ value: String?) -> TimeInterval? {
+        guard let value, let seconds = TimeInterval(value.trimmingCharacters(in: .whitespaces)) else {
+            return nil
+        }
+        return max(0, seconds)
     }
 }

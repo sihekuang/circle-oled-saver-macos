@@ -1,11 +1,28 @@
 import Foundation
 
 public final class ClaudeUsageProvider: BaseContentProvider {
-    public override var refreshInterval: TimeInterval { 30.0 }
+    /// 5 minutes. Usage percentages move slowly; cheaper on the endpoint and
+    /// well under any reasonable per-key rate limit.
+    public override var refreshInterval: TimeInterval { 300.0 }
+
+    /// Fallback delay when the server rate-limits us without a Retry-After.
+    static let defaultRateLimitBackoff: TimeInterval = 30 * 60
+
+    /// Backoff after a 401. Claude Code may refresh its access token shortly
+    /// after; no point hammering before that.
+    static let authFailureBackoff: TimeInterval = 5 * 60
+
+    /// Backoff after a transient transport / 5xx error.
+    static let transientFailureBackoff: TimeInterval = 60
 
     private let clock: () -> Date
     private let mode: ClaudeUsageMode
     private let usageClient: AnthropicUsageClient
+
+    /// Earliest time we'll attempt another fetch after a failure. nil means
+    /// "no backoff active". When set in the future, `fetchData()` keeps the
+    /// last known `cachedData` instead of overwriting it.
+    private var skipUntil: Date?
 
     public override convenience init() {
         let settings = SettingsManager.shared
@@ -28,19 +45,41 @@ public final class ClaudeUsageProvider: BaseContentProvider {
     }
 
     public override func fetchData() async {
+        if let skipUntil, skipUntil > clock() {
+            // Inside a backoff window — keep whatever the ball is already showing.
+            return
+        }
+
         let usage: AnthropicUsage
         do {
             usage = try await usageClient.fetchUsage()
         } catch AnthropicUsageClient.ClientError.missingToken {
             cachedData = ContentData(icon: "\u{2728}", text: "Claude\nsign in to CC")
+            skipUntil = nil
             return
         } catch AnthropicUsageClient.ClientError.http(let status, _) where status == 401 {
             cachedData = ContentData(icon: "\u{2728}", text: "Claude\nsign in to CC")
+            skipUntil = clock().addingTimeInterval(Self.authFailureBackoff)
+            return
+        } catch AnthropicUsageClient.ClientError.rateLimited(let retryAfter) {
+            // Keep last-known cachedData visible — don't overwrite with "offline".
+            let delay = retryAfter ?? Self.defaultRateLimitBackoff
+            skipUntil = clock().addingTimeInterval(delay)
             return
         } catch {
-            cachedData = ContentData(icon: "\u{2728}", text: "Claude\noffline")
+            // Other transport / 5xx / decoding failures. Show "offline" only if
+            // we have nothing better to display; otherwise keep the last good
+            // reading visible. Either way, back off briefly so we don't burn
+            // the next tick.
+            if cachedData == nil {
+                cachedData = ContentData(icon: "\u{2728}", text: "Claude\noffline")
+            }
+            skipUntil = clock().addingTimeInterval(Self.transientFailureBackoff)
             return
         }
+
+        // Success — clear backoff and render fresh data.
+        skipUntil = nil
 
         let bucket: AnthropicUsage.Bucket?
         let label: String
