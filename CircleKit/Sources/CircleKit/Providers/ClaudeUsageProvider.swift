@@ -6,7 +6,9 @@ public final class ClaudeUsageProvider: BaseContentProvider {
     private let projectsDir: URL
     private let clock: () -> Date
     private let mode: ClaudeUsageMode
+    private let authMode: ClaudeUsageAuthMode
     private let weeklyGoalTokens: Int
+    private let usageClient: AnthropicUsageClient
 
     public override convenience init() {
         let settings = SettingsManager.shared
@@ -15,7 +17,9 @@ public final class ClaudeUsageProvider: BaseContentProvider {
                 .appendingPathComponent(".claude/projects"),
             clock: { Date() },
             mode: settings.claudeUsageMode,
-            weeklyGoalTokens: settings.claudeUsageWeeklyGoalMTokens * 1_000_000
+            authMode: settings.claudeUsageAuthMode,
+            weeklyGoalTokens: settings.claudeUsageWeeklyGoalMTokens * 1_000_000,
+            usageClient: AnthropicUsageClient()
         )
     }
 
@@ -23,16 +27,31 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         projectsDir: URL,
         clock: @escaping () -> Date = { Date() },
         mode: ClaudeUsageMode = .today,
-        weeklyGoalTokens: Int = 0
+        authMode: ClaudeUsageAuthMode = .local,
+        weeklyGoalTokens: Int = 0,
+        usageClient: AnthropicUsageClient = AnthropicUsageClient()
     ) {
         self.projectsDir = projectsDir
         self.clock = clock
         self.mode = mode
+        self.authMode = authMode
         self.weeklyGoalTokens = weeklyGoalTokens
+        self.usageClient = usageClient
         super.init()
     }
 
     public override func fetchData() async {
+        switch authMode {
+        case .local:
+            cachedData = computeLocal()
+        case .anthropic:
+            cachedData = await computeAnthropic()
+        }
+    }
+
+    // MARK: - Local mode (CLI activity)
+
+    private func computeLocal() -> ContentData {
         let now = clock()
         let todayPrefix = dateString(for: now)
         let weekPrefixes = Set((0..<7).map {
@@ -42,20 +61,58 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         let totals = aggregate(weekPrefixes: weekPrefixes, todayPrefix: todayPrefix, now: now)
 
         guard weeklyGoalTokens > 0 else {
-            cachedData = ContentData(icon: "\u{2728}", text: "Claude\nset goal")
-            return
+            return ContentData(icon: "\u{2728}", text: "Claude\nset goal")
         }
 
         switch mode {
         case .today:
-            // Today's tokens vs the daily share of the weekly goal.
             let dailyTarget = Double(weeklyGoalTokens) / 7
             let pct = Int((Double(totals.today) / dailyTarget) * 100)
-            cachedData = ContentData(icon: "\u{2728}", text: "Claude\n\(pct)% today")
+            return ContentData(icon: "\u{2728}", text: "Claude\n\(pct)% today")
         case .week:
             let pct = Int((Double(totals.week) / Double(weeklyGoalTokens)) * 100)
-            cachedData = ContentData(icon: "\u{2728}", text: "Claude\n\(pct)% week")
+            return ContentData(icon: "\u{2728}", text: "Claude\n\(pct)% week")
         }
+    }
+
+    // MARK: - Anthropic mode (subscription quota)
+
+    private func computeAnthropic() async -> ContentData {
+        let usage: AnthropicUsage
+        do {
+            usage = try await usageClient.fetchUsage()
+        } catch AnthropicUsageClient.ClientError.missingToken {
+            return ContentData(icon: "\u{2728}", text: "Claude\npaste token")
+        } catch AnthropicUsageClient.ClientError.http(let status, _) where status == 401 {
+            return ContentData(icon: "\u{2728}", text: "Claude\nre-paste token")
+        } catch {
+            return ContentData(icon: "\u{2728}", text: "Claude\noffline")
+        }
+
+        let bucket: AnthropicUsage.Bucket?
+        let label: String
+        switch mode {
+        case .today:
+            bucket = usage.fiveHour
+            label = "session"
+        case .week:
+            bucket = usage.sevenDay
+            label = "week"
+        }
+
+        guard let bucket else {
+            return ContentData(icon: "\u{2728}", text: "Claude\nno data")
+        }
+
+        let pct = Int(bucket.utilization.rounded())
+        if let resetsAt = bucket.resetsAt {
+            let remaining = max(0, resetsAt.timeIntervalSince(clock()))
+            return ContentData(
+                icon: "\u{2728}",
+                text: "Claude\n\(pct)% \(label)\n\(Self.formatTimeRemaining(seconds: remaining)) left"
+            )
+        }
+        return ContentData(icon: "\u{2728}", text: "Claude\n\(pct)% \(label)")
     }
 
     // MARK: - Aggregation
@@ -75,8 +132,6 @@ public final class ClaudeUsageProvider: BaseContentProvider {
             return (0, 0)
         }
 
-        // Skip files modified before the start of the 7-day window — they can't
-        // contain entries for any of the dates we care about.
         let windowStart = now.addingTimeInterval(-86400 * 7)
 
         let decoder = JSONDecoder()
@@ -106,10 +161,6 @@ public final class ClaudeUsageProvider: BaseContentProvider {
                     let dateOnly = String(timestamp.prefix(10))
                     guard weekPrefixes.contains(dateOnly) else { continue }
 
-                    // Active token usage: what the user actually generated this
-                    // session. Cache reads are excluded — they're background
-                    // re-reads of the cached system prompt on every turn and
-                    // would dwarf the real usage signal.
                     let total = (usage.inputTokens ?? 0)
                               + (usage.outputTokens ?? 0)
                               + (usage.cacheCreationInputTokens ?? 0)
@@ -134,16 +185,19 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         return formatter.string(from: date)
     }
 
+    /// Compact "Xh Ym" / "Xh" / "Xm" countdown. Ceil to whole minutes so a
+    /// few seconds remaining still renders as "1m" instead of "0m".
+    static func formatTimeRemaining(seconds: TimeInterval) -> String {
+        let totalMinutes = Int((seconds / 60).rounded(.up))
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if hours > 0 && minutes > 0 { return "\(hours)h \(minutes)m" }
+        if hours > 0 { return "\(hours)h" }
+        return "\(minutes)m"
+    }
+
     // MARK: - Goal suggestion
 
-    /// Walks the last 28 days of JSONL data, splits into four 7-day buckets,
-    /// and returns a suggested weekly goal in M tokens: 1.2 × the busiest
-    /// bucket, rounded up to the nearest slider step (100M), clamped to
-    /// [100, 10000] to match the Settings slider range. Active tokens only
-    /// (cache reads excluded), consistent with the percentage display.
-    ///
-    /// Synchronous — callers should dispatch to a background queue if they
-    /// don't want to block their thread on file I/O.
     public static func suggestWeeklyGoalMTokens(
         projectsDir: URL = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude/projects"),
@@ -157,7 +211,6 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone.current
 
-        // Map each in-window date string to its 7-day bucket index (0..3).
         var dateToBucket: [String: Int] = [:]
         for d in 0..<windowDays {
             let day = now.addingTimeInterval(-86400 * Double(d))
@@ -210,7 +263,6 @@ public final class ClaudeUsageProvider: BaseContentProvider {
 
         let maxBucket = buckets.max() ?? 0
         let scaled = Double(maxBucket) * 1.2
-        // Round up to nearest 100M, then clamp to slider range [100, 10000].
         let mTokens = Int((scaled / 1_000_000 / 100).rounded(.up)) * 100
         return min(10000, max(100, mTokens))
     }

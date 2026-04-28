@@ -55,6 +55,7 @@ final class ContentSettingsSnapshotTests: XCTestCase {
             stockEnabled: false, stockSymbols: "", stockRefreshSeconds: 300,
             claudeUsageEnabled: false,
             claudeUsageMode: .today,
+            claudeUsageAuthMode: .local,
             claudeUsageWeeklyGoalMTokens: 1000,
             rotationInterval: 10
         )
@@ -64,6 +65,7 @@ final class ContentSettingsSnapshotTests: XCTestCase {
             stockEnabled: false, stockSymbols: "", stockRefreshSeconds: 300,
             claudeUsageEnabled: false,
             claudeUsageMode: .today,
+            claudeUsageAuthMode: .local,
             claudeUsageWeeklyGoalMTokens: 1000,
             rotationInterval: 10
         )
@@ -82,6 +84,7 @@ final class ContentSettingsSnapshotTests: XCTestCase {
         stockRefreshSeconds: Int = 300,
         claudeUsageEnabled: Bool = false,
         claudeUsageMode: ClaudeUsageMode = .today,
+        claudeUsageAuthMode: ClaudeUsageAuthMode = .local,
         claudeUsageWeeklyGoalMTokens: Int = 1000,
         rotationInterval: Int = 10
     ) -> ContentSettingsSnapshot {
@@ -95,6 +98,7 @@ final class ContentSettingsSnapshotTests: XCTestCase {
             stockRefreshSeconds: stockRefreshSeconds,
             claudeUsageEnabled: claudeUsageEnabled,
             claudeUsageMode: claudeUsageMode,
+            claudeUsageAuthMode: claudeUsageAuthMode,
             claudeUsageWeeklyGoalMTokens: claudeUsageWeeklyGoalMTokens,
             rotationInterval: rotationInterval
         )

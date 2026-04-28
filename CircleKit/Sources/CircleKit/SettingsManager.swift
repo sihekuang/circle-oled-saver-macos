@@ -17,6 +17,14 @@ public enum ClaudeUsageMode: String, CaseIterable, Codable {
     case week
 }
 
+public enum ClaudeUsageAuthMode: String, CaseIterable, Codable {
+    /// Local CLI activity, computed from JSONL logs against a user-set goal.
+    case local
+    /// Canonical subscription quota, fetched from Anthropic's OAuth usage
+    /// endpoint with a user-pasted access token.
+    case anthropic
+}
+
 public final class SettingsManager: ObservableObject {
     public static let shared = SettingsManager()
 
@@ -118,6 +126,9 @@ public final class SettingsManager: ObservableObject {
     @Published public var claudeUsageWeeklyGoalMTokens: Int {
         didSet { defaults.set(claudeUsageWeeklyGoalMTokens, forKey: "claudeUsageWeeklyGoalMTokens"); notify() }
     }
+    @Published public var claudeUsageAuthMode: ClaudeUsageAuthMode {
+        didSet { defaults.set(claudeUsageAuthMode.rawValue, forKey: "claudeUsageAuthMode"); notify() }
+    }
     @Published public var oledDisplayIDs: Set<String> {
         didSet { defaults.set(Array(oledDisplayIDs), forKey: "oledDisplayIDs"); notify() }
     }
@@ -158,6 +169,7 @@ public final class SettingsManager: ObservableObject {
             "claudeUsageEnabled": false,
             "claudeUsageMode": "today",
             "claudeUsageWeeklyGoalMTokens": 1000,
+            "claudeUsageAuthMode": "local",
         ])
 
         // Load values
@@ -192,6 +204,7 @@ public final class SettingsManager: ObservableObject {
         self.claudeUsageEnabled = defaults.bool(forKey: "claudeUsageEnabled")
         self.claudeUsageMode = ClaudeUsageMode(rawValue: defaults.string(forKey: "claudeUsageMode") ?? "today") ?? .today
         self.claudeUsageWeeklyGoalMTokens = defaults.integer(forKey: "claudeUsageWeeklyGoalMTokens")
+        self.claudeUsageAuthMode = ClaudeUsageAuthMode(rawValue: defaults.string(forKey: "claudeUsageAuthMode") ?? "local") ?? .local
     }
 
     /// Returns true if the overlay should show on a screen with this display ID.

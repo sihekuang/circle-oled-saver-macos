@@ -474,19 +474,27 @@ private struct ContentPageContent: View {
         SettingsSection("Claude Usage") {
             Toggle("Show Claude Token Usage", isOn: $settings.claudeUsageEnabled)
 
-            Text("Aggregates Claude tokens used on this Mac via the Claude Code CLI (reads ~/.claude/projects). Requires the Claude Code CLI to be installed and used. Tokens used through the web app or other devices are not included.")
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 12) {
+                Text("Source")
+                    .frame(width: 90, alignment: .leading)
+                Picker("", selection: Binding(
+                    get: { settings.claudeUsageAuthMode },
+                    set: { newValue in
+                        DispatchQueue.main.async {
+                            settings.claudeUsageAuthMode = newValue
+                        }
+                    }
+                )) {
+                    Text("Local").tag(ClaudeUsageAuthMode.local)
+                    Text("Anthropic").tag(ClaudeUsageAuthMode.anthropic)
+                }
+                .pickerStyle(.segmented)
+            }
+            .disabled(!settings.claudeUsageEnabled)
 
             HStack(spacing: 12) {
                 Text("Display")
                     .frame(width: 90, alignment: .leading)
-                // Defer the write to the next runloop tick. Writing directly
-                // to the @Published binding from a Picker selection mutation
-                // can fire objectWillChange.send() while SwiftUI is still
-                // processing the gesture, triggering the "Publishing changes
-                // from within view updates" warning.
                 Picker("", selection: Binding(
                     get: { settings.claudeUsageMode },
                     set: { newValue in
@@ -495,12 +503,35 @@ private struct ContentPageContent: View {
                         }
                     }
                 )) {
-                    Text("Today").tag(ClaudeUsageMode.today)
-                    Text("This Week").tag(ClaudeUsageMode.week)
+                    Text(settings.claudeUsageAuthMode == .anthropic ? "Session" : "Today")
+                        .tag(ClaudeUsageMode.today)
+                    Text(settings.claudeUsageAuthMode == .anthropic ? "Weekly" : "This Week")
+                        .tag(ClaudeUsageMode.week)
                 }
                 .pickerStyle(.segmented)
             }
             .disabled(!settings.claudeUsageEnabled)
+
+            if settings.claudeUsageAuthMode == .local {
+                ClaudeUsageLocalSettings(settings: settings)
+            } else {
+                ClaudeUsageAnthropicSettings(settings: settings)
+            }
+        }
+    }
+}
+
+// MARK: - Claude Usage: Local sub-section
+
+private struct ClaudeUsageLocalSettings: View {
+    @ObservedObject var settings: SettingsManager
+
+    var body: some View {
+        Group {
+            Text("Aggregates Claude tokens used on this Mac via the Claude Code CLI (reads ~/.claude/projects). Tokens used through the web app or other devices are not included.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
 
             LabeledSlider(
                 label: "Weekly Goal",
@@ -527,6 +558,123 @@ private struct ContentPageContent: View {
                 }
                 .disabled(!settings.claudeUsageEnabled)
             }
+        }
+    }
+}
+
+// MARK: - Claude Usage: Anthropic sub-section
+
+private struct ClaudeUsageAnthropicSettings: View {
+    @ObservedObject var settings: SettingsManager
+    @State private var token: String = ""
+    @State private var status: String = ""
+    @State private var statusColor: Color = .secondary
+
+    var body: some View {
+        Group {
+            Text("Shows your real Claude subscription quota — same numbers as the Claude Desktop app. Paste your OAuth access token below. The token is stored in your macOS Keychain.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            DisclosureGroup("How to get your token") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Run this in Terminal — the token will be copied to your clipboard:")
+                        .font(.caption)
+                    Text(extractCommand)
+                        .font(.system(.caption, design: .monospaced))
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.black.opacity(0.25))
+                        .cornerRadius(6)
+                        .textSelection(.enabled)
+                    Text("Tokens expire after about a day. When that happens, this content will say \u{201C}re-paste token\u{201D} — re-run the command and paste again.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 4)
+            }
+            .font(.caption)
+
+            HStack(spacing: 8) {
+                SecureField("sk-ant-oat01-...", text: $token)
+                    .textFieldStyle(.roundedBorder)
+                Button("Paste") {
+                    if let pasted = NSPasteboard.general.string(forType: .string) {
+                        token = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+                    }
+                }
+                Button("Save") {
+                    saveToken()
+                }
+                .disabled(token.isEmpty)
+                Button("Test") {
+                    Task { await testToken() }
+                }
+                .disabled(!hasStoredToken)
+            }
+            .disabled(!settings.claudeUsageEnabled)
+
+            if !status.isEmpty {
+                Text(status)
+                    .font(.caption)
+                    .foregroundColor(statusColor)
+            }
+
+            if hasStoredToken {
+                Button("Clear stored token") {
+                    KeychainStore.delete(service: KeychainStore.claudeOAuthService)
+                    token = ""
+                    status = "Token removed."
+                    statusColor = .secondary
+                }
+                .font(.caption)
+                .disabled(!settings.claudeUsageEnabled)
+            }
+        }
+    }
+
+    private var hasStoredToken: Bool {
+        KeychainStore.get(service: KeychainStore.claudeOAuthService) != nil
+    }
+
+    private var extractCommand: String {
+        // Single line so it can be copied verbatim.
+        "security find-generic-password -s 'Claude Code-credentials' -a \"$USER\" -w | python3 -c \"import json,sys;print(json.load(sys.stdin)['claudeAiOauth']['accessToken'])\" | pbcopy"
+    }
+
+    private func saveToken() {
+        do {
+            try KeychainStore.set(token, service: KeychainStore.claudeOAuthService)
+            status = "Token saved to Keychain. Tap Test to verify."
+            statusColor = .secondary
+            token = ""  // clear the field so it isn't visible after save
+            // Nudge the running provider to rebuild on next settings observer pass.
+            settings.claudeUsageAuthMode = settings.claudeUsageAuthMode  // re-publish
+        } catch {
+            status = "Couldn't save token: \(error)"
+            statusColor = .red
+        }
+    }
+
+    private func testToken() async {
+        status = "Testing…"
+        statusColor = .secondary
+        let client = AnthropicUsageClient()
+        do {
+            let usage = try await client.fetchUsage()
+            let week = usage.sevenDay.map { "\(Int($0.utilization.rounded()))% week" } ?? "no weekly data"
+            status = "OK — \(week)"
+            statusColor = .green
+        } catch AnthropicUsageClient.ClientError.missingToken {
+            status = "No token saved yet."
+            statusColor = .red
+        } catch AnthropicUsageClient.ClientError.http(let code, _) {
+            status = "Server returned \(code). Token may be expired — re-paste."
+            statusColor = .red
+        } catch {
+            status = "Failed: \(error)"
+            statusColor = .red
         }
     }
 }
