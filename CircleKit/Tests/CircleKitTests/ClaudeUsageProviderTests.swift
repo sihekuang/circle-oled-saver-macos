@@ -115,7 +115,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         XCTAssertEqual(provider.cachedData?.text, "Claude\nsign in to CC")
     }
 
-    func testServerErrorShowsOffline() async {
+    func testServerErrorShowsOfflineWhenNoCachedData() async {
         MockURLProtocol.responder = { request in
             return (Data("oops".utf8), Self.status(request.url!, 500))
         }
@@ -126,6 +126,163 @@ final class ClaudeUsageProviderTests: XCTestCase {
         let provider = ClaudeUsageProvider(mode: .today, usageClient: client)
         await provider.fetchData()
         XCTAssertEqual(provider.cachedData?.text, "Claude\noffline")
+    }
+
+    func testServerErrorKeepsLastKnownData() async {
+        // First call succeeds, second call 5xx — ball should keep showing the
+        // last good reading, not "offline".
+        var callCount = 0
+        MockURLProtocol.responder = { request in
+            callCount += 1
+            if callCount == 1 {
+                let body = #"{"five_hour":{"utilization":42.0,"resets_at":null}}"#
+                return (Data(body.utf8), Self.ok(request.url!))
+            }
+            return (Data("oops".utf8), Self.status(request.url!, 500))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-test" }
+        )
+        // Override transient backoff so the second call goes through.
+        var now = isoDate("2026-04-28T12:00:00Z")
+        let provider = ClaudeUsageProvider(clock: { now }, mode: .today, usageClient: client)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n42% session")
+        // Advance past the transient backoff window.
+        now = now.addingTimeInterval(120)
+        await provider.fetchData()
+        // Still the previous good data, not "offline".
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n42% session")
+    }
+
+    // MARK: - Rate limiting (429)
+
+    func testRateLimitedWithoutRetryAfterUsesDefaultBackoff() async {
+        var callCount = 0
+        MockURLProtocol.responder = { request in
+            callCount += 1
+            return (Data("rate limited".utf8), Self.status(request.url!, 429))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-test" }
+        )
+        var now = isoDate("2026-04-28T12:00:00Z")
+        let provider = ClaudeUsageProvider(clock: { now }, mode: .today, usageClient: client)
+        await provider.fetchData()
+        XCTAssertEqual(callCount, 1)
+        // Advance 10 minutes — still inside the 30min default backoff.
+        now = now.addingTimeInterval(10 * 60)
+        await provider.fetchData()
+        XCTAssertEqual(callCount, 1, "should NOT have made a second network call")
+        // Advance past 30 minutes — backoff cleared, network call resumes.
+        now = now.addingTimeInterval(25 * 60)
+        await provider.fetchData()
+        XCTAssertEqual(callCount, 2)
+    }
+
+    func testRateLimitedHonorsRetryAfterHeader() async {
+        var callCount = 0
+        MockURLProtocol.responder = { request in
+            callCount += 1
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 429,
+                httpVersion: nil,
+                headerFields: ["Retry-After": "60"]
+            )!
+            return (Data("rate limited".utf8), response)
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-test" }
+        )
+        var now = isoDate("2026-04-28T12:00:00Z")
+        let provider = ClaudeUsageProvider(clock: { now }, mode: .today, usageClient: client)
+        await provider.fetchData()
+        // 30s later — still inside the 60s window the server requested.
+        now = now.addingTimeInterval(30)
+        await provider.fetchData()
+        XCTAssertEqual(callCount, 1)
+        // 90s total — past Retry-After, retry happens.
+        now = now.addingTimeInterval(60)
+        await provider.fetchData()
+        XCTAssertEqual(callCount, 2)
+    }
+
+    func testRateLimitedKeepsLastKnownData() async {
+        var callCount = 0
+        MockURLProtocol.responder = { request in
+            callCount += 1
+            if callCount == 1 {
+                let body = #"{"five_hour":{"utilization":42.0,"resets_at":null}}"#
+                return (Data(body.utf8), Self.ok(request.url!))
+            }
+            return (Data("rate limited".utf8), Self.status(request.url!, 429))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-test" }
+        )
+        var now = isoDate("2026-04-28T12:00:00Z")
+        let provider = ClaudeUsageProvider(clock: { now }, mode: .today, usageClient: client)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n42% session")
+        // Force the 429 by advancing past the *previous* backoff (none yet).
+        now = now.addingTimeInterval(31 * 60)
+        await provider.fetchData()
+        // Last good data preserved, NOT "offline".
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n42% session")
+    }
+
+    func testSuccessClearsBackoff() async {
+        var callCount = 0
+        MockURLProtocol.responder = { request in
+            callCount += 1
+            if callCount == 1 {
+                return (Data("rate limited".utf8), Self.status(request.url!, 429))
+            }
+            let body = #"{"five_hour":{"utilization":12.0,"resets_at":null}}"#
+            return (Data(body.utf8), Self.ok(request.url!))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-test" }
+        )
+        var now = isoDate("2026-04-28T12:00:00Z")
+        let provider = ClaudeUsageProvider(clock: { now }, mode: .today, usageClient: client)
+        await provider.fetchData()
+        // Past the 30min default backoff → call goes through and succeeds.
+        now = now.addingTimeInterval(31 * 60)
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n12% session")
+        // Subsequent fetch happens immediately with no backoff.
+        await provider.fetchData()
+        XCTAssertEqual(callCount, 3)
+    }
+
+    // MARK: - Retry-After parsing
+
+    func testRetryAfterParsesIntegerSeconds() {
+        XCTAssertEqual(AnthropicUsageClient.parseRetryAfter("120"), 120)
+    }
+
+    func testRetryAfterParsesWithWhitespace() {
+        XCTAssertEqual(AnthropicUsageClient.parseRetryAfter("  60  "), 60)
+    }
+
+    func testRetryAfterClampsNegative() {
+        XCTAssertEqual(AnthropicUsageClient.parseRetryAfter("-5"), 0)
+    }
+
+    func testRetryAfterReturnsNilForMissing() {
+        XCTAssertNil(AnthropicUsageClient.parseRetryAfter(nil))
+    }
+
+    func testRetryAfterReturnsNilForHTTPDate() {
+        // HTTP-date form not supported; we fall back to default backoff.
+        XCTAssertNil(AnthropicUsageClient.parseRetryAfter("Wed, 21 Oct 2026 07:28:00 GMT"))
     }
 
     // MARK: - Helpers
