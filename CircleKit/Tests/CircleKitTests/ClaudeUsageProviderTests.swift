@@ -31,14 +31,14 @@ final class ClaudeUsageProviderTests: XCTestCase {
             weeklyGoalTokens: testWeeklyGoal
         )
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today\n24h left")
     }
 
     func testNoJSONLFiles() async throws {
         try makeProject("empty")
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today\n24h left")
     }
 
     func testIgnoresMalformedLines() async throws {
@@ -51,7 +51,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // Active = 100 + 100 + 50 = 250 (cacheRead excluded). Daily share = 1000. -> 25%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today\n24h left")
     }
 
     func testTodayWithoutGoalShowsHint() async throws {
@@ -91,7 +91,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // 250 / 1000 = 25%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today\n24h left")
     }
 
     func testTodayExactly100() async throws {
@@ -101,7 +101,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // 1000 / 1000 = 100%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n100% today")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n100% today\n24h left")
     }
 
     func testTodayAbove100() async throws {
@@ -111,7 +111,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // 2500 / 1000 = 250%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n250% today")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n250% today\n24h left")
     }
 
     func testTodaySumsAcrossProjectsAndFiles() async throws {
@@ -127,7 +127,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // 200 + 300 + 500 = 1000 -> 100%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n100% today")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n100% today\n24h left")
     }
 
     func testCacheReadsAreExcluded() async throws {
@@ -139,7 +139,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // 250 / 1000 = 25% (cacheRead ignored)
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today\n24h left")
     }
 
     func testTodayIgnoresOtherDates() async throws {
@@ -149,7 +149,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         ])
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n0% today\n24h left")
     }
 
     func testTodayIgnoresNonAssistantEntries() async throws {
@@ -161,7 +161,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         // Only the assistant line counts: 250 / 1000 = 25%
         let provider = makeProvider(date: "2026-04-26", mode: .today)
         await provider.fetchData()
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today\n24h left")
     }
 
     // MARK: - Week percentage
@@ -217,7 +217,79 @@ final class ClaudeUsageProviderTests: XCTestCase {
         XCTAssertEqual(provider.cachedData?.icon, "\u{2728}")
     }
 
+    // MARK: - Time-until-midnight formatting
+
+    private func untilMidnight(_ date: Date) -> String {
+        ClaudeUsageProvider.formatTimeRemaining(seconds: ClaudeUsageProvider.secondsUntilMidnight(from: date))
+    }
+
+    func testFormatTimeUntilMidnightHoursAndMinutes() {
+        // 14:30 local → 9h 30m to midnight
+        let date = makeDate("2026-04-26", hour: 14, minute: 30)
+        XCTAssertEqual(untilMidnight(date), "9h 30m")
+    }
+
+    func testFormatTimeUntilMidnightOmitsZeroMinutes() {
+        // 19:00 → exactly 5h, no leftover minutes
+        let date = makeDate("2026-04-26", hour: 19, minute: 0)
+        XCTAssertEqual(untilMidnight(date), "5h")
+    }
+
+    func testFormatTimeUntilMidnight1HourLeft() {
+        // 23:00 → exactly 1h to midnight
+        let date = makeDate("2026-04-26", hour: 23, minute: 0)
+        XCTAssertEqual(untilMidnight(date), "1h")
+    }
+
+    func testFormatTimeUntilMidnightUnder1Hour() {
+        // 23:30 → 30m to midnight
+        let date = makeDate("2026-04-26", hour: 23, minute: 30)
+        XCTAssertEqual(untilMidnight(date), "30m")
+    }
+
+    func testFormatTimeUntilMidnightFewSecondsCeilsTo1m() {
+        // 23:59:30 → 30s remaining → ceil → "1m" (never display "0m" before midnight)
+        let date = makeDate("2026-04-26", hour: 23, minute: 59).addingTimeInterval(30)
+        XCTAssertEqual(untilMidnight(date), "1m")
+    }
+
+    func testTodayDisplayIncludesResetCountdown() async throws {
+        try writeSession("p1", "session1.jsonl", lines: [
+            assistantLine(timestamp: "2026-04-26T15:00:00Z", input: 0, output: 250, cacheRead: 0, cacheCreate: 0),
+        ])
+        let provider = ClaudeUsageProvider(
+            projectsDir: tempDir,
+            clock: { self.makeDate("2026-04-26", hour: 18, minute: 0) },
+            mode: .today,
+            weeklyGoalTokens: testWeeklyGoal
+        )
+        await provider.fetchData()
+        // 18:00 → 6h to midnight. 250 / 1000 = 25%.
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% today\n6h left")
+    }
+
+    func testWeekDisplayDoesNotIncludeResetCountdown() async throws {
+        try writeSession("p1", "session1.jsonl", lines: [
+            assistantLine(timestamp: "2026-04-26T15:00:00Z", input: 0, output: 1750, cacheRead: 0, cacheCreate: 0),
+        ])
+        let provider = ClaudeUsageProvider(
+            projectsDir: tempDir,
+            clock: { self.makeDate("2026-04-26", hour: 18, minute: 0) },
+            mode: .week,
+            weeklyGoalTokens: testWeeklyGoal
+        )
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n25% week")
+    }
+
     // MARK: - Helpers
+
+    private func makeDate(_ ymd: String, hour: Int, minute: Int) -> Date {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm"
+        formatter.timeZone = TimeZone.current
+        return formatter.date(from: "\(ymd) \(String(format: "%02d:%02d", hour, minute))")!
+    }
 
     private func makeProject(_ name: String) throws {
         try FileManager.default.createDirectory(

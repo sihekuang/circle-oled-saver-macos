@@ -48,3 +48,22 @@ CircleKit (Swift Package — shared rendering, physics, themes, content, setting
 - **Swift Package Manager** for CircleKit (local package dependency)
 - macOS 14.0+ / Swift 5.9 / Xcode 15.0
 - Tests use a mix of Swift Testing and XCTest frameworks
+
+## Versioning
+
+Bump the version at the end of every task (PR), in the same branch, before opening the PR. Update **both** Info.plists in lockstep — the app and saver always ship at the same version:
+
+- `CircleApp/Info.plist` — `CFBundleShortVersionString` and `CFBundleVersion`
+- `CircleSaver/Info.plist` — `CFBundleShortVersionString` and `CFBundleVersion`
+
+Rules (semver):
+
+| Bump | When | Example |
+|------|------|---------|
+| **Patch** (`x.x.+1`) | Default. Bug fixes, refinements, small enhancements to existing features. | `1.0.0` → `1.0.1` |
+| **Minor** (`x.+1.0`) | New user-facing feature: a new content provider, a new theme, a new settings page, a substantial UX addition. | `1.0.5` → `1.1.0` |
+| **Major** (`+1.0.0`) | Only on explicit user request: breaking changes, big rewrites. | `1.4.2` → `2.0.0` |
+
+`CFBundleVersion` (build number) is a monotonically increasing integer — increment by 1 every bump regardless of patch/minor/major.
+
+Commit the version bump separately (e.g., `Bump version to 1.0.1`) so it's easy to find. Reflect the new version in the PR title or body when relevant.
