@@ -13,6 +13,54 @@ final class ClaudeUsageProviderTests: XCTestCase {
         super.tearDown()
     }
 
+    // MARK: - Keychain access gate
+
+    func testWithoutKeychainAccessShowsOpenSettingsAndSkipsKeychain() async {
+        var tokenProviderCalled = false
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: {
+                tokenProviderCalled = true
+                return "sk-ant-oat01-test"
+            }
+        )
+        let provider = ClaudeUsageProvider(
+            mode: .today,
+            usageClient: client,
+            hasKeychainAccess: { false }
+        )
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\nopen Settings")
+        XCTAssertFalse(tokenProviderCalled, "must not read keychain when access not granted")
+    }
+
+    func testGrantingAccessAfterGatedFetchUpdatesOnNextTick() async {
+        // Until access flips on, ball shows "open Settings". After it flips,
+        // the next fetch reads the keychain and renders normally. This is the
+        // post-denial recovery path — user clicks Check Connection in
+        // Settings, succeeds, flag flips, next provider tick renders.
+        var hasAccess = false
+        MockURLProtocol.responder = { request in
+            let body = #"{"five_hour":{"utilization":42.0,"resets_at":null}}"#
+            return (Data(body.utf8), Self.ok(request.url!))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-test" }
+        )
+        let provider = ClaudeUsageProvider(
+            mode: .today,
+            usageClient: client,
+            hasKeychainAccess: { hasAccess }
+        )
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\nopen Settings")
+
+        hasAccess = true
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n42% session")
+    }
+
     // MARK: - No token (Claude Code not signed in)
 
     func testNoTokenShowsSignInPrompt() async {
@@ -20,7 +68,11 @@ final class ClaudeUsageProviderTests: XCTestCase {
             session: stubSession(),
             tokenProvider: { nil }
         )
-        let provider = ClaudeUsageProvider(mode: .today, usageClient: client)
+        let provider = ClaudeUsageProvider(
+            mode: .today,
+            usageClient: client,
+            hasKeychainAccess: { true }
+        )
         await provider.fetchData()
         XCTAssertEqual(provider.cachedData?.text, "Claude\nsign in to CC")
     }
@@ -30,7 +82,11 @@ final class ClaudeUsageProviderTests: XCTestCase {
             session: stubSession(),
             tokenProvider: { "" }
         )
-        let provider = ClaudeUsageProvider(mode: .today, usageClient: client)
+        let provider = ClaudeUsageProvider(
+            mode: .today,
+            usageClient: client,
+            hasKeychainAccess: { true }
+        )
         await provider.fetchData()
         XCTAssertEqual(provider.cachedData?.text, "Claude\nsign in to CC")
     }

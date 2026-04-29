@@ -637,7 +637,9 @@ private struct ClaudeUsageSettings: View {
     }
 
     private func refreshKeychainState() {
-        keychainState = readKeychainState()
+        let state = readKeychainState()
+        keychainState = state
+        applyAccessFlag(for: state)
     }
 
     private func runCheck() {
@@ -647,8 +649,25 @@ private struct ClaudeUsageSettings: View {
         testStatusColor = .secondary
         let state = readKeychainState()
         keychainState = state
+        applyAccessFlag(for: state)
         Task {
             await pingUsageEndpoint(state: state)
+        }
+    }
+
+    /// Translates a keychain read result into the persistent access flag
+    /// the screensaver provider checks before reading the keychain itself.
+    /// Successful reads grant access; explicit denial revokes. Other states
+    /// (notFound / unexpected) leave the flag untouched so a transient blip
+    /// doesn't undo a prior approval.
+    private func applyAccessFlag(for state: ClaudeCodeKeychainState) {
+        switch state {
+        case .ok, .okNoExpiry:
+            settings.claudeUsageHasKeychainAccess = true
+        case .accessDenied:
+            settings.claudeUsageHasKeychainAccess = false
+        case .unchecked, .notFound, .error:
+            break
         }
     }
 
