@@ -343,7 +343,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         )
         await provider.fetchData()
         XCTAssertEqual(capturedSince, isoDate("2026-04-28T13:00:00Z"))
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n33% session \u{00B7} 1.2M\n6h left")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n33% session \u{00B7} 1.2M used\n6h left")
     }
 
     func testAppendsTokensToWeekDisplayWithSevenDayWindow() async {
@@ -369,7 +369,7 @@ final class ClaudeUsageProviderTests: XCTestCase {
         await provider.fetchData()
         // resets_at 2026-04-30T00:00, window = 7d → window start = 2026-04-23T00:00.
         XCTAssertEqual(capturedSince, isoDate("2026-04-23T00:00:00Z"))
-        XCTAssertEqual(provider.cachedData?.text, "Claude\n48% week \u{00B7} 13M\n24h left")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n48% week \u{00B7} 13M used\n24h left")
     }
 
     func testZeroTokensOmitsTokenSegment() async {

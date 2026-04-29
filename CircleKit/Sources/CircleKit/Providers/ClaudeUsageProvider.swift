@@ -134,7 +134,7 @@ public final class ClaudeUsageProvider: BaseContentProvider {
             let windowStart = resetsAt.addingTimeInterval(-windowDuration)
             let tokens = tokensSince(windowStart)
             if tokens > 0 {
-                headline += " \u{00B7} \(Self.formatTokens(tokens))"
+                headline += " \u{00B7} \(Self.formatTokens(tokens)) used"
             }
         }
 
