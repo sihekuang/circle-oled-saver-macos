@@ -10,11 +10,24 @@ A bouncing circle screensaver for macOS, designed for OLED displays. Ships as bo
 - **Multi-monitor** — spawns an independent overlay on every connected screen
 - **Two themes** — Minimal (glowing circle) and Soft (morphing blob)
 - **Proximity fade** — circle fades out as the cursor approaches it
-- **Content display** — shows clock and system info (battery, etc.) inside the circle
-- **Content rotation** — cycles between clock and system info on a configurable interval
+- **Content display** — shows clock, system info (battery, etc.), and Claude Code usage inside the circle
+- **Content rotation** — cycles between content providers on a configurable interval
 - **Always-on mode** — keeps the overlay visible regardless of idle state
 - **Global hotkey** — toggle always-on with ⌘⌥O
 - **Launch at login** — optional background launch on startup
+
+---
+
+## Claude Code usage display
+
+One of the built-in content providers shows your current Claude Code subscription quota (`5h` and `7d` utilization percentages plus the absolute token count) inside the circle. Here's exactly how it works, since it touches the keychain:
+
+- **Source of the number.** The provider calls `https://api.anthropic.com/api/oauth/usage` with the `anthropic-beta: oauth-2025-04-20` header. This is the same endpoint Claude Code's own statusline uses to render the quota bar. The response shape is decoded in [`AnthropicUsageClient.swift`](CircleKit/Sources/CircleKit/Auth/AnthropicUsageClient.swift).
+- **How auth works.** Claude Code stores its OAuth credential blob in the macOS Keychain under service name `Claude Code-credentials`. The provider reads the access token from that entry and includes it as a Bearer token on the API request. Token refresh is handled by Claude Code itself in the background — Circle just reads whatever access token is current at fetch time. See [`ClaudeCodeKeychain.swift`](CircleKit/Sources/CircleKit/Auth/ClaudeCodeKeychain.swift).
+- **What you'll see the first time.** macOS shows the standard keychain access prompt (*"Circle wants to use your confidential information stored in 'Claude Code-credentials' in your keychain"*). Click **Always Allow** to make subsequent reads silent, or **Deny** to keep the feature off.
+- **Where the token goes.** Only into the single HTTPS request to `api.anthropic.com`. The token is never logged, persisted, or sent anywhere else. The feature is gated behind an explicit Settings toggle, so the keychain is not touched until you opt in.
+- **Stability caveat.** `/api/oauth/usage` is a **beta endpoint** that is not part of Anthropic's documented public API surface. Anthropic could change the response shape, tighten rate limits, or remove the endpoint without notice — in which case this provider will silently fall back to "—" until the integration is updated. There is no SLA on this endpoint; it exists for Claude Code's own UI and is being consumed by community tooling at our own risk.
+- **Requires Claude Code.** If Claude Code isn't installed or you're not signed in, the keychain entry won't exist and the provider reports "Claude Code not signed in" without prompting for keychain access.
 
 ---
 
