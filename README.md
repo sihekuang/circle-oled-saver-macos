@@ -120,6 +120,10 @@ Each display frame follows this path:
 
 ---
 
+## Distribution
+
+Releases are built and published automatically by [`.github/workflows/release.yml`](.github/workflows/release.yml) on every `v*` tag, and attached as `Circle.zip` to the corresponding [GitHub Release](https://github.com/sihekuang/circle-oled-saver-macos/releases). The build is **ad-hoc signed** (no Apple Developer cert), so first launch requires right-click → **Open** to bypass Gatekeeper. See [docs/distribution.md](docs/distribution.md) for details.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.

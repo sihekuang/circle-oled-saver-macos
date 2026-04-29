@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v1.3.3). Required for manual runs.'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build and release Circle.app
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve release tag and version
+        id: tag
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "push" ]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            TAG="${{ inputs.tag }}"
+          fi
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag '$TAG' must match vMAJOR.MINOR.PATCH (e.g. v1.4.0)"
+            exit 1
+          fi
+          VERSION="${TAG#v}"
+          echo "name=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Release tag: $TAG"
+          echo "Marketing version: $VERSION"
+          echo "Build number: $GITHUB_RUN_NUMBER"
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build CircleApp (Release, ad-hoc signed)
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project CircleOLEDSaver.xcodeproj \
+            -scheme CircleApp \
+            -configuration Release \
+            -derivedDataPath build \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY=- \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGNING_REQUIRED=YES \
+            CODE_SIGNING_ALLOWED=YES \
+            MARKETING_VERSION="${{ steps.tag.outputs.version }}" \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
+            build
+
+      - name: Verify embedded version
+        run: |
+          set -euo pipefail
+          APP="build/Build/Products/Release/Circle.app"
+          ACTUAL_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
+          ACTUAL_BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$APP/Contents/Info.plist")
+          echo "Embedded: $ACTUAL_VERSION ($ACTUAL_BUILD)"
+          if [ "$ACTUAL_VERSION" != "${{ steps.tag.outputs.version }}" ]; then
+            echo "::error::Built version '$ACTUAL_VERSION' does not match tag version '${{ steps.tag.outputs.version }}'"
+            exit 1
+          fi
+
+      - name: Verify ad-hoc signature
+        run: |
+          set -euo pipefail
+          APP="build/Build/Products/Release/Circle.app"
+          codesign -dv "$APP" 2>&1
+          codesign --verify --deep --strict "$APP"
+
+      - name: Package Circle.zip
+        run: |
+          set -euo pipefail
+          cd build/Build/Products/Release
+          ditto -c -k --keepParent --sequesterRsrc Circle.app "$GITHUB_WORKSPACE/Circle.zip"
+          ls -lh "$GITHUB_WORKSPACE/Circle.zip"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          files: Circle.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          body: |
+            **Circle OLED Saver** — ad-hoc signed build.
+
+            ### Install
+            1. Download `Circle.zip` and unzip.
+            2. Move `Circle.app` to `/Applications`.
+            3. **First launch:** right-click → **Open** → **Open** in the dialog. This is required because the build is ad-hoc signed (no Apple Developer cert), so Gatekeeper blocks the default double-click on first run.
+            4. Subsequent launches work normally.
+
+            See [docs/distribution.md](https://github.com/sihekuang/circle-oled-saver-macos/blob/main/docs/distribution.md) for details on the signing approach.
