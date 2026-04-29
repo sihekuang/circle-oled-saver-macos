@@ -115,6 +115,14 @@ public final class SettingsManager: ObservableObject {
     @Published public var claudeUsageMode: ClaudeUsageMode {
         didSet { defaults.set(claudeUsageMode.rawValue, forKey: "claudeUsageMode"); notify() }
     }
+    /// Sticky flag flipped to true once the user has explicitly granted
+    /// keychain access via Settings (Toggle-on or Check Connection succeeds).
+    /// Until then, ClaudeUsageProvider shows "open Settings" instead of
+    /// reading the keychain — this prevents the macOS permission prompt
+    /// from firing in the background at app launch.
+    @Published public var claudeUsageHasKeychainAccess: Bool {
+        didSet { defaults.set(claudeUsageHasKeychainAccess, forKey: "claudeUsageHasKeychainAccess"); notify() }
+    }
     @Published public var oledDisplayIDs: Set<String> {
         didSet { defaults.set(Array(oledDisplayIDs), forKey: "oledDisplayIDs"); notify() }
     }
@@ -154,6 +162,7 @@ public final class SettingsManager: ObservableObject {
             "stockRefreshSeconds": 300,
             "claudeUsageEnabled": false,
             "claudeUsageMode": "today",
+            "claudeUsageHasKeychainAccess": false,
         ])
 
         // Load values
@@ -187,6 +196,7 @@ public final class SettingsManager: ObservableObject {
         self.stockRefreshSeconds = defaults.integer(forKey: "stockRefreshSeconds")
         self.claudeUsageEnabled = defaults.bool(forKey: "claudeUsageEnabled")
         self.claudeUsageMode = ClaudeUsageMode(rawValue: defaults.string(forKey: "claudeUsageMode") ?? "today") ?? .today
+        self.claudeUsageHasKeychainAccess = defaults.bool(forKey: "claudeUsageHasKeychainAccess")
     }
 
     /// Returns true if the overlay should show on a screen with this display ID.

@@ -19,6 +19,11 @@ public final class ClaudeUsageProvider: BaseContentProvider {
     private let clock: () -> Date
     private let mode: ClaudeUsageMode
     private let usageClient: AnthropicUsageClient
+    /// Resolved at fetch time so flipping
+    /// `SettingsManager.claudeUsageHasKeychainAccess` from Settings takes
+    /// effect on the very next tick (the renderer also rebuilds the rotator
+    /// when this snapshot field changes).
+    private let hasKeychainAccess: () -> Bool
 
     /// Earliest time we'll attempt another fetch after a failure. nil means
     /// "no backoff active". When set in the future, `fetchData()` keeps the
@@ -30,22 +35,36 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         self.init(
             clock: { Date() },
             mode: settings.claudeUsageMode,
-            usageClient: AnthropicUsageClient()
+            usageClient: AnthropicUsageClient(),
+            hasKeychainAccess: { SettingsManager.shared.claudeUsageHasKeychainAccess }
         )
     }
 
     init(
         clock: @escaping () -> Date = { Date() },
         mode: ClaudeUsageMode = .today,
-        usageClient: AnthropicUsageClient = AnthropicUsageClient()
+        usageClient: AnthropicUsageClient = AnthropicUsageClient(),
+        hasKeychainAccess: @escaping () -> Bool = { true }
     ) {
         self.clock = clock
         self.mode = mode
         self.usageClient = usageClient
+        self.hasKeychainAccess = hasKeychainAccess
         super.init()
     }
 
     public override func fetchData() async {
+        // Hard gate: until the user has explicitly granted keychain access
+        // through Settings, never read the keychain. This is what prevents
+        // the macOS permission prompt from firing in the background at app
+        // launch (e.g., from the menu-bar app, before the user has even
+        // opened Settings).
+        guard hasKeychainAccess() else {
+            cachedData = ContentData(icon: "\u{2728}", text: "Claude\nopen Settings")
+            skipUntil = nil
+            return
+        }
+
         if let skipUntil, skipUntil > clock() {
             // Inside a backoff window — keep whatever the ball is already showing.
             return
