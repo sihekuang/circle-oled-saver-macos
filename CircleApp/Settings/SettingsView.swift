@@ -487,7 +487,23 @@ private struct ClaudeUsageSettings: View {
 
     var body: some View {
         Group {
-            Toggle("Show Claude Usage", isOn: $settings.claudeUsageEnabled)
+            Toggle("Show Claude Usage", isOn: Binding(
+                get: { settings.claudeUsageEnabled },
+                set: { newValue in
+                    settings.claudeUsageEnabled = newValue
+                    if newValue {
+                        // First read of Claude Code's keychain entry — this is
+                        // the moment macOS shows the permission prompt. Doing
+                        // it here means the prompt fires while the user is in
+                        // Settings (with our explanation visible right above)
+                        // rather than later from the screensaver, out of context.
+                        refreshKeychainState()
+                    } else {
+                        keychainState = .unchecked
+                        testStatus = ""
+                    }
+                }
+            ))
 
             HStack(spacing: 12) {
                 Text("Display")
@@ -507,10 +523,19 @@ private struct ClaudeUsageSettings: View {
             }
             .disabled(!settings.claudeUsageEnabled)
 
-            Text("Reads your subscription quota from Claude Code's keychain entry on this Mac. Claude Code refreshes the access token automatically — Circle just reads whatever is current. Requires Claude Code installed and signed in.")
+            Text("Shows your Claude subscription quota by calling Anthropic's /api/oauth/usage endpoint with the OAuth token Claude Code stores in your keychain. The token is used only for that API request and never leaves your Mac. Requires Claude Code installed and signed in.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+
+            HStack(alignment: .top, spacing: 6) {
+                Image(systemName: "lock.shield")
+                    .font(.caption2)
+                Text("macOS will prompt the first time Circle reads Claude Code's keychain entry — that's macOS asking your permission to share data between two apps. Pick \u{201C}Always Allow\u{201D} and Circle won't ask again.")
+                    .font(.caption2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .foregroundColor(.secondary)
 
             HStack(spacing: 4) {
                 Image(systemName: "arrow.clockwise")
@@ -547,7 +572,6 @@ private struct ClaudeUsageSettings: View {
             }
             .font(.caption)
         }
-        .onAppear { refreshKeychainState() }
     }
 
     private var refreshIntervalLabel: String {
