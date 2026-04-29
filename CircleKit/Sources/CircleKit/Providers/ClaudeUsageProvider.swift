@@ -24,6 +24,9 @@ public final class ClaudeUsageProvider: BaseContentProvider {
     /// effect on the very next tick (the renderer also rebuilds the rotator
     /// when this snapshot field changes).
     private let hasKeychainAccess: () -> Bool
+    /// Reads Claude Code's local JSONL logs to get an absolute token count
+    /// for the current window. The OAuth endpoint only gives utilization %.
+    private let tokensSince: (Date) -> Int
 
     /// Earliest time we'll attempt another fetch after a failure. nil means
     /// "no backoff active". When set in the future, `fetchData()` keeps the
@@ -36,7 +39,8 @@ public final class ClaudeUsageProvider: BaseContentProvider {
             clock: { Date() },
             mode: settings.claudeUsageMode,
             usageClient: AnthropicUsageClient(),
-            hasKeychainAccess: { SettingsManager.shared.claudeUsageHasKeychainAccess }
+            hasKeychainAccess: { SettingsManager.shared.claudeUsageHasKeychainAccess },
+            tokensSince: { JSONLUsageReader.tokensSince($0) }
         )
     }
 
@@ -44,12 +48,14 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         clock: @escaping () -> Date = { Date() },
         mode: ClaudeUsageMode = .today,
         usageClient: AnthropicUsageClient = AnthropicUsageClient(),
-        hasKeychainAccess: @escaping () -> Bool = { true }
+        hasKeychainAccess: @escaping () -> Bool = { true },
+        tokensSince: @escaping (Date) -> Int = { _ in 0 }
     ) {
         self.clock = clock
         self.mode = mode
         self.usageClient = usageClient
         self.hasKeychainAccess = hasKeychainAccess
+        self.tokensSince = tokensSince
         super.init()
     }
 
@@ -103,13 +109,16 @@ public final class ClaudeUsageProvider: BaseContentProvider {
 
         let bucket: AnthropicUsage.Bucket?
         let label: String
+        let windowDuration: TimeInterval
         switch mode {
         case .today:
             bucket = usage.fiveHour
             label = "session"
+            windowDuration = 5 * 3600
         case .week:
             bucket = usage.sevenDay
             label = "week"
+            windowDuration = 7 * 86400
         }
 
         guard let bucket else {
@@ -118,15 +127,36 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         }
 
         let pct = Int(bucket.utilization.rounded())
+        var headline = "\(pct)% \(label)"
+        // Append "· X.YM" when we can locate the window start (resetsAt minus
+        // the window duration) and the local JSONL aggregation finds entries.
+        if let resetsAt = bucket.resetsAt {
+            let windowStart = resetsAt.addingTimeInterval(-windowDuration)
+            let tokens = tokensSince(windowStart)
+            if tokens > 0 {
+                headline += " \u{00B7} \(Self.formatTokens(tokens))"
+            }
+        }
+
         if let resetsAt = bucket.resetsAt {
             let remaining = max(0, resetsAt.timeIntervalSince(clock()))
             cachedData = ContentData(
                 icon: "\u{2728}",
-                text: "Claude\n\(pct)% \(label)\n\(Self.formatTimeRemaining(seconds: remaining)) left"
+                text: "Claude\n\(headline)\n\(Self.formatTimeRemaining(seconds: remaining)) left"
             )
         } else {
-            cachedData = ContentData(icon: "\u{2728}", text: "Claude\n\(pct)% \(label)")
+            cachedData = ContentData(icon: "\u{2728}", text: "Claude\n\(headline)")
         }
+    }
+
+    /// Formats a token count in millions. Always shows one decimal place under
+    /// 10M (e.g. "1.2M"), drops the decimal at 10M+ to keep the line short.
+    public static func formatTokens(_ count: Int) -> String {
+        let millions = Double(count) / 1_000_000.0
+        if millions >= 10 {
+            return "\(Int(millions.rounded()))M"
+        }
+        return String(format: "%.1fM", millions)
     }
 
     /// Compact "Xh Ym" / "Xh" / "Xm" countdown. Ceil to whole minutes so a

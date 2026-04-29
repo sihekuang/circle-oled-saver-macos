@@ -318,6 +318,113 @@ final class ClaudeUsageProviderTests: XCTestCase {
         XCTAssertEqual(callCount, 3)
     }
 
+    // MARK: - Token aggregation (JSONL)
+
+    func testAppendsTokensToTodayDisplayWhenAvailable() async {
+        MockURLProtocol.responder = { request in
+            let body = #"{"five_hour":{"utilization":33.0,"resets_at":"2026-04-28T18:00:00+00:00"}}"#
+            return (Data(body.utf8), Self.ok(request.url!))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-test" }
+        )
+        let now = isoDate("2026-04-28T12:00:00Z")
+        // resets_at 18:00, window = 5h → window start = 13:00.
+        var capturedSince: Date?
+        let provider = ClaudeUsageProvider(
+            clock: { now },
+            mode: .today,
+            usageClient: client,
+            tokensSince: { since in
+                capturedSince = since
+                return 1_234_567
+            }
+        )
+        await provider.fetchData()
+        XCTAssertEqual(capturedSince, isoDate("2026-04-28T13:00:00Z"))
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n33% session \u{00B7} 1.2M\n6h left")
+    }
+
+    func testAppendsTokensToWeekDisplayWithSevenDayWindow() async {
+        MockURLProtocol.responder = { request in
+            let body = #"{"seven_day":{"utilization":48.0,"resets_at":"2026-04-30T00:00:00+00:00"}}"#
+            return (Data(body.utf8), Self.ok(request.url!))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-test" }
+        )
+        let now = isoDate("2026-04-29T00:00:00Z")
+        var capturedSince: Date?
+        let provider = ClaudeUsageProvider(
+            clock: { now },
+            mode: .week,
+            usageClient: client,
+            tokensSince: { since in
+                capturedSince = since
+                return 12_500_000
+            }
+        )
+        await provider.fetchData()
+        // resets_at 2026-04-30T00:00, window = 7d → window start = 2026-04-23T00:00.
+        XCTAssertEqual(capturedSince, isoDate("2026-04-23T00:00:00Z"))
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n48% week \u{00B7} 13M\n24h left")
+    }
+
+    func testZeroTokensOmitsTokenSegment() async {
+        MockURLProtocol.responder = { request in
+            let body = #"{"five_hour":{"utilization":33.0,"resets_at":"2026-04-28T18:00:00+00:00"}}"#
+            return (Data(body.utf8), Self.ok(request.url!))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-test" }
+        )
+        let now = isoDate("2026-04-28T12:00:00Z")
+        let provider = ClaudeUsageProvider(
+            clock: { now },
+            mode: .today,
+            usageClient: client,
+            tokensSince: { _ in 0 }
+        )
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n33% session\n6h left")
+    }
+
+    func testTokensNotAppendedWhenResetsAtMissing() async {
+        MockURLProtocol.responder = { request in
+            let body = #"{"five_hour":{"utilization":15.0,"resets_at":null}}"#
+            return (Data(body.utf8), Self.ok(request.url!))
+        }
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            tokenProvider: { "sk-ant-oat01-test" }
+        )
+        var called = false
+        let provider = ClaudeUsageProvider(
+            mode: .today,
+            usageClient: client,
+            tokensSince: { _ in called = true; return 999_999 }
+        )
+        await provider.fetchData()
+        XCTAssertFalse(called, "no resets_at = no window start = no JSONL read")
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n15% session")
+    }
+
+    func testFormatTokensSubMillion() {
+        XCTAssertEqual(ClaudeUsageProvider.formatTokens(0), "0.0M")
+        XCTAssertEqual(ClaudeUsageProvider.formatTokens(123_456), "0.1M")
+        XCTAssertEqual(ClaudeUsageProvider.formatTokens(1_500_000), "1.5M")
+        XCTAssertEqual(ClaudeUsageProvider.formatTokens(9_949_000), "9.9M")
+    }
+
+    func testFormatTokensTenMillionPlus() {
+        XCTAssertEqual(ClaudeUsageProvider.formatTokens(10_000_000), "10M")
+        XCTAssertEqual(ClaudeUsageProvider.formatTokens(12_400_000), "12M")
+        XCTAssertEqual(ClaudeUsageProvider.formatTokens(12_600_000), "13M")
+    }
+
     // MARK: - Retry-After parsing
 
     func testRetryAfterParsesIntegerSeconds() {
