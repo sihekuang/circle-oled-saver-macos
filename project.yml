@@ -18,8 +18,8 @@ settings:
     # Defaults for local builds. CI release builds override both via xcodebuild
     # build settings, sourcing MARKETING_VERSION from the v* tag and
     # CURRENT_PROJECT_VERSION from github.run_number. See docs/distribution.md.
-    MARKETING_VERSION: "1.3.7"
-    CURRENT_PROJECT_VERSION: "12"
+    MARKETING_VERSION: "1.3.8"
+    CURRENT_PROJECT_VERSION: "13"
 
 packages:
   CircleKit:
