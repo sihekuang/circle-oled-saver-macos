@@ -196,13 +196,17 @@ private struct GeneralPageContent: View {
         }
 
         SettingsSection("Menu Bar") {
+            Text("Toggles macOS' menu bar auto-hide. Requires Automation permission for System Events on first use.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
             MenuBarAutoHideToggle()
-            Text("Toggles the same setting as System Settings → Desktop & Dock → Automatically hide and show the menu bar. Requires Automation permission for System Events.")
+
+            Text("Dock auto-hide is built into macOS — set it in System Settings → Desktop & Dock. Circle doesn't bind a Dock hotkey; assign one yourself via macOS Shortcuts if you want one.")
                 .font(.caption)
                 .foregroundColor(.secondary)
-            Text("Dock auto-hide is built into macOS — set it in System Settings. Circle doesn't bind a Dock hotkey; assign one yourself via macOS Shortcuts if you want one.")
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
 
         SettingsSection("Hotkeys") {
