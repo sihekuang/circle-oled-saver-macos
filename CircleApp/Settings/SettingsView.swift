@@ -222,28 +222,31 @@ private struct GeneralPageContent: View {
 
 // MARK: - Menu Bar Auto-Hide Toggle
 
-/// Reads + writes macOS' menu-bar auto-hide preference. State is cached in
-/// @State and refreshed on appear — drift is possible if the user toggles
-/// via the hotkey while the Settings window is open, but reopening Settings
-/// re-syncs. AppleScript failure (e.g. Automation permission not granted)
-/// leaves the toggle visually flipped briefly and then snaps back when the
-/// next render reads the unchanged source of truth.
+/// Initial state comes from `UserDefaults` (cheap, no Automation prompt)
+/// so opening Settings doesn't request System-Events permission unless
+/// the user actually flips the toggle. Refreshed on appear to pick up any
+/// change that happened since the view was last shown (e.g. via the
+/// hotkey). Drift while the window stays open is possible — reopening
+/// Settings re-syncs. On AppleScript failure (permission denied) the
+/// local state isn't updated and the toggle snaps back on next render.
 private struct MenuBarAutoHideToggle: View {
-    @State private var isHidden = false
+    @State private var isHidden: Bool
+
+    init() {
+        _isHidden = State(initialValue: MenuBarAutoHide.isHidden)
+    }
 
     var body: some View {
         Toggle("Auto-hide macOS menu bar", isOn: Binding(
             get: { isHidden },
             set: { newValue in
-                if let actual = MenuBarAutoHide.setHidden(newValue) {
-                    isHidden = actual
+                if MenuBarAutoHide.setHidden(newValue) != nil {
+                    isHidden = newValue
                 }
             }
         ))
         .onAppear {
-            if let current = MenuBarAutoHide.isHidden {
-                isHidden = current
-            }
+            isHidden = MenuBarAutoHide.isHidden
         }
     }
 }
