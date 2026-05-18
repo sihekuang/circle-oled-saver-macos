@@ -1,117 +1,241 @@
 name: Release
 
+# Triggered by:
+#   - Tag pushes matching v*  (e.g. v1.4.0)         — for releases
+#   - Manual dispatch from the Actions tab          — for ad-hoc verification
+#
+# Produces a Developer ID-signed Circle.app uploaded as a workflow artifact.
+# Tag pushes (v*) additionally notarize + staple, so the .app verifies offline
+# through Gatekeeper. workflow_dispatch builds are signed but not notarized —
+# useful for pipeline smoke tests without burning Apple notarization round-trips.
+
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag to release (e.g. v1.3.3). Required for manual runs.'
-        required: true
-        type: string
 
 permissions:
   contents: write
 
 jobs:
   build:
-    name: Build and release Circle.app
+    name: Build, sign, notarize, release
     runs-on: macos-15
+    timeout-minutes: 60
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Select Xcode 26.3
         # MacHUD 0.5.2 declares swift-tools-version:6.2, which requires
         # Swift 6.2 / Xcode 26+. macos-15 default Xcode (16.4) ships Swift 6.1
-        # and fails to resolve the package. 26.3 is the latest available on
-        # the runner image at time of writing.
+        # and fails to resolve the package.
         run: sudo xcode-select -switch /Applications/Xcode_26.3.app
 
       - name: Resolve release tag and version
         id: tag
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "push" ]; then
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
+            if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::Tag '$TAG' must match vMAJOR.MINOR.PATCH (e.g. v1.4.0)"
+              exit 1
+            fi
+            VERSION="${TAG#v}"
+            IS_RELEASE=true
           else
-            TAG="${{ inputs.tag }}"
+            TAG="dispatch-${GITHUB_RUN_NUMBER}"
+            VERSION="0.0.0"
+            IS_RELEASE=false
           fi
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Tag '$TAG' must match vMAJOR.MINOR.PATCH (e.g. v1.4.0)"
-            exit 1
-          fi
-          VERSION="${TAG#v}"
           echo "name=$TAG" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "is_release=$IS_RELEASE" >> "$GITHUB_OUTPUT"
           echo "Release tag: $TAG"
           echo "Marketing version: $VERSION"
           echo "Build number: $GITHUB_RUN_NUMBER"
+          echo "Is release: $IS_RELEASE"
 
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      # Import the Developer ID Application cert into a temp keychain.
+      # The keychain is wiped in the always-run cleanup step at the end
+      # of the job, so the cert never persists past this run.
+      - name: Set up signing keychain
+        env:
+          P12_BASE64: ${{ secrets.MACOS_CERT_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          KC_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KC="$RUNNER_TEMP/build.keychain-db"
+          P12="$RUNNER_TEMP/cert.p12"
+
+          echo "$P12_BASE64" | base64 --decode > "$P12"
+          # Fail fast on an empty decode — that means the secret was set
+          # wrong (e.g. by an older `gh secret set --body -` where the
+          # literal "-" got stored as the value).
+          [ -s "$P12" ] || { echo "::error::decoded p12 is empty — re-push MACOS_CERT_P12_BASE64"; exit 1; }
+
+          security create-keychain -p "$KC_PASSWORD" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KC_PASSWORD" "$KC"
+
+          # macOS 15's `security import` won't auto-detect PKCS#12 here;
+          # -f pkcs12 is mandatory. -A grants any app access to the
+          # imported key (the modern replacement for the self-referential
+          # -T flags, which trip "params not valid" on macos-15).
+          security import "$P12" \
+            -k "$KC" \
+            -P "$P12_PASSWORD" \
+            -f pkcs12 \
+            -A \
+            -T /usr/bin/codesign
+
+          # Prepend the new keychain to the user's search list so codesign
+          # finds the imported identity. xargs strips the surrounding quotes
+          # `security list-keychains` prints around each path.
+          security list-keychains -d user -s "$KC" \
+            $(security list-keychains -d user | tr -d '"' | xargs)
+
+          # Without this, codesign hits an "always allow" GUI dialog that
+          # never resolves on a headless runner.
+          security set-key-partition-list \
+            -S apple-tool:,apple: -s -k "$KC_PASSWORD" "$KC" >/dev/null
+
+          rm -f "$P12"
+
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build CircleApp (Release, ad-hoc signed)
+      - name: Build CircleApp (Developer ID, hardened runtime)
+        env:
+          SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+          DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          set -euo pipefail
+          set -o pipefail
           xcodebuild \
             -project CircleOLEDSaver.xcodeproj \
             -scheme CircleApp \
             -configuration Release \
             -derivedDataPath build \
             ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGN_IDENTITY=- \
+            CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
             CODE_SIGN_STYLE=Manual \
-            CODE_SIGNING_REQUIRED=YES \
-            CODE_SIGNING_ALLOWED=YES \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+            OTHER_CODE_SIGN_FLAGS="--timestamp --options runtime" \
             MARKETING_VERSION="${{ steps.tag.outputs.version }}" \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
             build
 
-      - name: Verify embedded version
+      - name: Verify, locate, and zip Circle.app
+        id: pack
         run: |
           set -euo pipefail
           APP="build/Build/Products/Release/Circle.app"
-          ACTUAL_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
-          ACTUAL_BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$APP/Contents/Info.plist")
-          echo "Embedded: $ACTUAL_VERSION ($ACTUAL_BUILD)"
-          if [ "$ACTUAL_VERSION" != "${{ steps.tag.outputs.version }}" ]; then
-            echo "::error::Built version '$ACTUAL_VERSION' does not match tag version '${{ steps.tag.outputs.version }}'"
-            exit 1
+          test -d "$APP"
+
+          # On tag releases, verify the embedded version matches the tag.
+          # workflow_dispatch builds use a placeholder version so we skip.
+          if [ "${{ steps.tag.outputs.is_release }}" = "true" ]; then
+            ACTUAL_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
+            ACTUAL_BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$APP/Contents/Info.plist")
+            echo "Embedded: $ACTUAL_VERSION ($ACTUAL_BUILD)"
+            if [ "$ACTUAL_VERSION" != "${{ steps.tag.outputs.version }}" ]; then
+              echo "::error::Built version '$ACTUAL_VERSION' does not match tag version '${{ steps.tag.outputs.version }}'"
+              exit 1
+            fi
           fi
 
-      - name: Verify ad-hoc signature
+          # Verify codesign accepts the bundle.
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign -dvv "$APP" 2>&1 | head -20
+
+          # Ditto produces a zip Finder will unpack cleanly (preserves
+          # symlinks, xattrs, ACLs — plain `zip -r` corrupts the bundle).
+          ditto -c -k --keepParent --sequesterRsrc "$APP" Circle.zip
+          ls -lh Circle.zip
+          echo "zip=Circle.zip" >> "$GITHUB_OUTPUT"
+          echo "app=$APP" >> "$GITHUB_OUTPUT"
+          # Artifact names can't contain '/', so flatten branch refs like
+          # 'feat/x' to 'feat-x'. Tag refs (e.g. 'v1.4.0') pass through.
+          echo "ref_slug=${GITHUB_REF_NAME//\//-}" >> "$GITHUB_OUTPUT"
+
+      # Notarize + staple. Gated on tag pushes so workflow_dispatch runs
+      # (used for verifying the workflow itself) don't queue submissions
+      # against Apple. notarytool blocks until Apple finishes (typically
+      # 1-5 min); --timeout caps the wait so a stuck submission can't
+      # hold the runner.
+      - name: Notarize and staple
+        if: steps.tag.outputs.is_release == 'true'
+        env:
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
         run: |
           set -euo pipefail
-          APP="build/Build/Products/Release/Circle.app"
-          codesign -dv "$APP" 2>&1
-          codesign --verify --deep --strict "$APP"
+          P8="$RUNNER_TEMP/AuthKey.p8"
+          echo "$APPLE_API_KEY_BASE64" | base64 --decode > "$P8"
 
-      - name: Package Circle.zip
-        run: |
-          set -euo pipefail
-          cd build/Build/Products/Release
-          ditto -c -k --keepParent --sequesterRsrc Circle.app "$GITHUB_WORKSPACE/Circle.zip"
-          ls -lh "$GITHUB_WORKSPACE/Circle.zip"
+          # Submit the zip we already built. Apple stores the notarization
+          # ticket server-side; stapler pulls it down in the next step.
+          xcrun notarytool submit Circle.zip \
+            --key "$P8" \
+            --key-id "$APPLE_API_KEY_ID" \
+            --issuer "$APPLE_API_ISSUER_ID" \
+            --wait \
+            --timeout 30m
 
+          rm -f "$P8"
+
+          # Staple the ticket onto the .app (not the zip — stapling a zip
+          # is not a thing). After this the .app verifies offline.
+          APP="${{ steps.pack.outputs.app }}"
+          xcrun stapler staple "$APP"
+          xcrun stapler validate "$APP"
+
+          # Gatekeeper assessment — should print "accepted" with
+          # "source=Notarized Developer ID". Failure here means signing
+          # passed but Gatekeeper still won't open the .app on a clean Mac.
+          spctl -a -vvv -t install "$APP"
+
+          # Re-zip the now-stapled .app so the artifact + Release upload
+          # picks up the version with the embedded ticket.
+          rm -f Circle.zip
+          ditto -c -k --keepParent --sequesterRsrc "$APP" Circle.zip
+          ls -lh Circle.zip
+
+      - name: Upload Circle.app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Circle-${{ steps.pack.outputs.ref_slug }}-app
+          path: ${{ steps.pack.outputs.zip }}
+          retention-days: 30
+
+      # On a tag push, also attach the zip to the GitHub Release. Created
+      # automatically if it doesn't already exist.
       - name: Create GitHub Release
+        if: steps.tag.outputs.is_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.name }}
-          files: Circle.zip
+          files: ${{ steps.pack.outputs.zip }}
           generate_release_notes: true
           fail_on_unmatched_files: true
           body: |
-            **Circle OLED Saver** — ad-hoc signed build.
+            **Circle OLED Saver** — Developer ID signed and notarized.
 
             ### Install
             1. Download `Circle.zip` and unzip.
             2. Move `Circle.app` to `/Applications`.
-            3. **First launch:** right-click → **Open** → **Open** in the dialog. This is required because the build is ad-hoc signed (no Apple Developer cert), so Gatekeeper blocks the default double-click on first run.
-            4. Subsequent launches work normally.
+            3. Double-click to launch.
 
-            See [docs/distribution.md](https://github.com/sihekuang/circle-oled-saver-macos/blob/main/docs/distribution.md) for details on the signing approach.
+            See [docs/distribution.md](https://github.com/sihekuang/circle-oled-saver-macos/blob/main/docs/distribution.md) for details.
+
+      # always() so a failed build doesn't leave the cert + key sitting
+      # in a keychain. The runner is ephemeral but defence in depth.
+      - name: Cleanup signing keychain
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/build.keychain-db" 2>/dev/null || true

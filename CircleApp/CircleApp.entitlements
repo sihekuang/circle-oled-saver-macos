@@ -4,5 +4,10 @@
 <dict>
     <key>com.apple.security.app-sandbox</key>
     <false/>
+    <!-- Required under hardened runtime (notarized builds) so the menu-bar
+         auto-hide hotkey can send Apple Events to System Events. Without
+         this, the AppleScript call is silently blocked. -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
 </dict>
 </plist>
