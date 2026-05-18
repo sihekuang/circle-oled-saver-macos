@@ -195,6 +195,16 @@ private struct GeneralPageContent: View {
             Toggle("Launch at Login", isOn: $settings.launchAtLogin)
         }
 
+        SettingsSection("Menu Bar") {
+            MenuBarAutoHideToggle()
+            Text("Toggles the same setting as System Settings → Desktop & Dock → Automatically hide and show the menu bar. Requires Automation permission for System Events.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            Text("Dock auto-hide is built into macOS — set it in System Settings. Circle doesn't bind a Dock hotkey; assign one yourself via macOS Shortcuts if you want one.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+
         SettingsSection("Hotkeys") {
             HotkeyRecorderView(label: "Enable", hotkey: $settings.enableHotkey)
             HotkeyRecorderView(label: "Always On", hotkey: $settings.alwaysOnHotkey)
@@ -202,6 +212,34 @@ private struct GeneralPageContent: View {
             HotkeyRecorderView(label: "Size Down", hotkey: $settings.sizeDownHotkey)
             HotkeyRecorderView(label: "Rotate", hotkey: $settings.rotateContentHotkey)
             HotkeyRecorderView(label: "Menu Bar Auto-Hide", hotkey: $settings.menuBarAutoHideHotkey)
+        }
+    }
+}
+
+// MARK: - Menu Bar Auto-Hide Toggle
+
+/// Reads + writes macOS' menu-bar auto-hide preference. State is cached in
+/// @State and refreshed on appear — drift is possible if the user toggles
+/// via the hotkey while the Settings window is open, but reopening Settings
+/// re-syncs. AppleScript failure (e.g. Automation permission not granted)
+/// leaves the toggle visually flipped briefly and then snaps back when the
+/// next render reads the unchanged source of truth.
+private struct MenuBarAutoHideToggle: View {
+    @State private var isHidden = false
+
+    var body: some View {
+        Toggle("Auto-hide macOS menu bar", isOn: Binding(
+            get: { isHidden },
+            set: { newValue in
+                if let actual = MenuBarAutoHide.setHidden(newValue) {
+                    isHidden = actual
+                }
+            }
+        ))
+        .onAppear {
+            if let current = MenuBarAutoHide.isHidden {
+                isHidden = current
+            }
         }
     }
 }
