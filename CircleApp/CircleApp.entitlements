@@ -9,5 +9,12 @@
          this, the AppleScript call is silently blocked. -->
     <key>com.apple.security.automation.apple-events</key>
     <true/>
+    <!-- Explicitly disable get-task-allow. Manual signing on Release
+         builds doesn't always auto-strip the Debug default, so Apple's
+         notary check rejects the bundle with "executable requests the
+         com.apple.security.get-task-allow entitlement." Setting it false
+         here forces codesign to embed false in the signed blob. -->
+    <key>com.apple.security.get-task-allow</key>
+    <false/>
 </dict>
 </plist>
