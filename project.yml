@@ -10,11 +10,16 @@ settings:
   base:
     SWIFT_VERSION: "5.9"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
+    # Required for notarization. Applies hardened runtime to every signing
+    # pass during the build, not just the outer app — without this, embedded
+    # SPM frameworks (MacHUD, CircleKit) ship without it and Apple's static
+    # check rejects the bundle as Invalid.
+    ENABLE_HARDENED_RUNTIME: YES
     # Defaults for local builds. CI release builds override both via xcodebuild
     # build settings, sourcing MARKETING_VERSION from the v* tag and
     # CURRENT_PROJECT_VERSION from github.run_number. See docs/distribution.md.
-    MARKETING_VERSION: "1.3.5"
-    CURRENT_PROJECT_VERSION: "10"
+    MARKETING_VERSION: "1.3.6"
+    CURRENT_PROJECT_VERSION: "11"
 
 packages:
   CircleKit:
