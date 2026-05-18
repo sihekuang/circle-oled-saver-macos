@@ -195,6 +195,20 @@ private struct GeneralPageContent: View {
             Toggle("Launch at Login", isOn: $settings.launchAtLogin)
         }
 
+        SettingsSection("Menu Bar") {
+            Text("Toggles macOS' menu bar auto-hide. Requires Automation permission for System Events on first use.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            MenuBarAutoHideToggle()
+
+            Text("Dock auto-hide is built into macOS — set it in System Settings → Desktop & Dock. Circle doesn't bind a Dock hotkey; assign one yourself via macOS Shortcuts if you want one.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+
         SettingsSection("Hotkeys") {
             HotkeyRecorderView(label: "Enable", hotkey: $settings.enableHotkey)
             HotkeyRecorderView(label: "Always On", hotkey: $settings.alwaysOnHotkey)
@@ -202,6 +216,37 @@ private struct GeneralPageContent: View {
             HotkeyRecorderView(label: "Size Down", hotkey: $settings.sizeDownHotkey)
             HotkeyRecorderView(label: "Rotate", hotkey: $settings.rotateContentHotkey)
             HotkeyRecorderView(label: "Menu Bar Auto-Hide", hotkey: $settings.menuBarAutoHideHotkey)
+        }
+    }
+}
+
+// MARK: - Menu Bar Auto-Hide Toggle
+
+/// Initial state comes from `UserDefaults` (cheap, no Automation prompt)
+/// so opening Settings doesn't request System-Events permission unless
+/// the user actually flips the toggle. Refreshed on appear to pick up any
+/// change that happened since the view was last shown (e.g. via the
+/// hotkey). Drift while the window stays open is possible — reopening
+/// Settings re-syncs. On AppleScript failure (permission denied) the
+/// local state isn't updated and the toggle snaps back on next render.
+private struct MenuBarAutoHideToggle: View {
+    @State private var isHidden: Bool
+
+    init() {
+        _isHidden = State(initialValue: MenuBarAutoHide.isHidden)
+    }
+
+    var body: some View {
+        Toggle("Auto-hide macOS menu bar", isOn: Binding(
+            get: { isHidden },
+            set: { newValue in
+                if MenuBarAutoHide.setHidden(newValue) != nil {
+                    isHidden = newValue
+                }
+            }
+        ))
+        .onAppear {
+            isHidden = MenuBarAutoHide.isHidden
         }
     }
 }

@@ -166,22 +166,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Menu Bar Auto-Hide
 
     private func toggleMenuBarAutoHide() -> Bool? {
-        let script = """
-        tell application "System Events"
-            tell dock preferences
-                set autohide menu bar to not autohide menu bar
-                return autohide menu bar
-            end tell
-        end tell
-        """
-        var error: NSDictionary?
-        guard let appleScript = NSAppleScript(source: script) else { return nil }
-        let result = appleScript.executeAndReturnError(&error)
-        if let error {
-            NSLog("[Circle] Menu bar auto-hide toggle failed: %@. Grant Automation permission to Circle in System Settings → Privacy & Security → Automation → System Events.", error)
-            return nil
-        }
-        return result.booleanValue
+        MenuBarAutoHide.toggle()
     }
 
     // MARK: - Settings
