@@ -472,6 +472,18 @@ private struct ContentPageContent: View {
                 suffix: "s",
                 valueWidth: 40
             )
+
+            HStack {
+                Button("Rotate Now") {
+                    NotificationCenter.default.post(name: ContentRotator.rotateNowNotification, object: nil)
+                }
+                Spacer()
+            }
+
+            Text("Advances to the next content item immediately. Same as the Rotate hotkey.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
 
         SettingsSection("Clock") {
