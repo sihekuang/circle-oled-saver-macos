@@ -24,6 +24,10 @@ public final class ClaudeUsageProvider: BaseContentProvider {
     /// effect on the very next tick (the renderer also rebuilds the rotator
     /// when this snapshot field changes).
     private let hasKeychainAccess: () -> Bool
+    /// Called when macOS denies the keychain read. Turns the gate above off
+    /// so we stop re-prompting on every tick until the user re-grants access
+    /// from Settings.
+    private let revokeKeychainAccess: () -> Void
     /// Reads Claude Code's local JSONL logs to get an absolute token count
     /// for the current window. The OAuth endpoint only gives utilization %.
     private let tokensSince: (Date) -> Int
@@ -40,6 +44,12 @@ public final class ClaudeUsageProvider: BaseContentProvider {
             mode: settings.claudeUsageMode,
             usageClient: AnthropicUsageClient(),
             hasKeychainAccess: { SettingsManager.shared.claudeUsageHasKeychainAccess },
+            revokeKeychainAccess: {
+                // SettingsManager is @Published / drives the UI — mutate on main.
+                DispatchQueue.main.async {
+                    SettingsManager.shared.claudeUsageHasKeychainAccess = false
+                }
+            },
             tokensSince: { JSONLUsageReader.tokensSince($0) }
         )
     }
@@ -49,12 +59,14 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         mode: ClaudeUsageMode = .today,
         usageClient: AnthropicUsageClient = AnthropicUsageClient(),
         hasKeychainAccess: @escaping () -> Bool = { true },
+        revokeKeychainAccess: @escaping () -> Void = {},
         tokensSince: @escaping (Date) -> Int = { _ in 0 }
     ) {
         self.clock = clock
         self.mode = mode
         self.usageClient = usageClient
         self.hasKeychainAccess = hasKeychainAccess
+        self.revokeKeychainAccess = revokeKeychainAccess
         self.tokensSince = tokensSince
         super.init()
     }
@@ -79,6 +91,11 @@ public final class ClaudeUsageProvider: BaseContentProvider {
         let usage: AnthropicUsage
         do {
             usage = try await usageClient.fetchUsage()
+        } catch AnthropicUsageClient.ClientError.keychainAccessDenied {
+            revokeKeychainAccess()
+            cachedData = ContentData(icon: "\u{2728}", text: "Claude\nopen Settings")
+            skipUntil = nil
+            return
         } catch AnthropicUsageClient.ClientError.missingToken {
             cachedData = ContentData(icon: "\u{2728}", text: "Claude\nsign in to CC")
             skipUntil = nil

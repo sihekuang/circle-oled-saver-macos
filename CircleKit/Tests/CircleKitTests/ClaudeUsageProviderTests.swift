@@ -61,6 +61,65 @@ final class ClaudeUsageProviderTests: XCTestCase {
         XCTAssertEqual(provider.cachedData?.text, "Claude\n42% session")
     }
 
+    func testKeychainDeniedRevokesAccessAndShowsOpenSettings() async {
+        // Denying (or dismissing) the macOS prompt must turn the feature's
+        // keychain gate off, so the provider doesn't re-prompt on every tick
+        // and every overlay show.
+        var hasAccess = true
+        var keychainReads = 0
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            credentialProvider: {
+                keychainReads += 1
+                return .failure(.accessDenied)
+            }
+        )
+        let provider = ClaudeUsageProvider(
+            mode: .today,
+            usageClient: client,
+            hasKeychainAccess: { hasAccess },
+            revokeKeychainAccess: { hasAccess = false }
+        )
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\nopen Settings")
+        XCTAssertFalse(hasAccess)
+
+        await provider.fetchData()
+        XCTAssertEqual(keychainReads, 1, "must not read the keychain again after a denial")
+    }
+
+    func testMissingKeychainEntryDoesNotRevokeAccess() async {
+        var revoked = false
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            credentialProvider: { .failure(.notFound) }
+        )
+        let provider = ClaudeUsageProvider(
+            mode: .today,
+            usageClient: client,
+            hasKeychainAccess: { true },
+            revokeKeychainAccess: { revoked = true }
+        )
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\nsign in to CC")
+        XCTAssertFalse(revoked)
+    }
+
+    func test401InvalidatesCachedToken() async {
+        MockURLProtocol.responder = { request in
+            return (Data("expired".utf8), Self.status(request.url!, 401))
+        }
+        var invalidated = false
+        let client = AnthropicUsageClient(
+            session: stubSession(),
+            credentialProvider: { .success("sk-ant-oat01-stale") },
+            onUnauthorized: { invalidated = true }
+        )
+        let provider = ClaudeUsageProvider(mode: .today, usageClient: client)
+        await provider.fetchData()
+        XCTAssertTrue(invalidated, "a rejected token must be dropped so the next fetch re-reads Claude Code's refreshed one")
+    }
+
     // MARK: - No token (Claude Code not signed in)
 
     func testNoTokenShowsSignInPrompt() async {

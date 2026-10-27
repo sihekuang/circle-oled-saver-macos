@@ -53,10 +53,13 @@ public struct AnthropicUsage: Decodable {
 
 /// Calls `/api/oauth/usage` with the current access token from Claude Code's
 /// keychain entry. Claude Code itself does the OAuth refresh dance — we just
-/// read whatever access token is current at fetch time.
+/// reuse the token from `ClaudeCodeTokenCache` and drop it on a 401.
 public final class AnthropicUsageClient {
     public enum ClientError: Error {
         case missingToken
+        /// macOS refused this app access to Claude Code's keychain entry —
+        /// the user denied or dismissed the permission prompt.
+        case keychainAccessDenied
         /// 429 from the server. `retryAfter` is parsed from the `Retry-After`
         /// response header when present; nil means the server didn't tell us.
         case rateLimited(retryAfter: TimeInterval?)
@@ -66,18 +69,37 @@ public final class AnthropicUsageClient {
     }
 
     private let session: URLSession
-    private let tokenProvider: () -> String?
+    private let credentialProvider: () -> Result<String, ClaudeCodeKeychain.ReadError>
+    private let onUnauthorized: () -> Void
 
     public init(
         session: URLSession = .shared,
-        tokenProvider: @escaping () -> String? = { ClaudeCodeKeychain.readAccessToken() }
+        credentialProvider: @escaping () -> Result<String, ClaudeCodeKeychain.ReadError> = { ClaudeCodeTokenCache.shared.token() },
+        onUnauthorized: @escaping () -> Void = { ClaudeCodeTokenCache.shared.invalidate() }
     ) {
         self.session = session
-        self.tokenProvider = tokenProvider
+        self.credentialProvider = credentialProvider
+        self.onUnauthorized = onUnauthorized
+    }
+
+    /// Convenience for callers (and tests) that only care whether a token
+    /// exists. A nil token is reported as `missingToken`.
+    public convenience init(session: URLSession = .shared, tokenProvider: @escaping () -> String?) {
+        self.init(
+            session: session,
+            credentialProvider: { tokenProvider().map { .success($0) } ?? .failure(.notFound) },
+            onUnauthorized: {}
+        )
     }
 
     public func fetchUsage() async throws -> AnthropicUsage {
-        guard let token = tokenProvider(), !token.isEmpty else {
+        let token: String
+        switch credentialProvider() {
+        case .success(let value) where !value.isEmpty:
+            token = value
+        case .failure(.accessDenied):
+            throw ClientError.keychainAccessDenied
+        default:
             throw ClientError.missingToken
         }
 
@@ -99,6 +121,9 @@ public final class AnthropicUsageClient {
             if http.statusCode == 429 {
                 let retryAfter = Self.parseRetryAfter(http.value(forHTTPHeaderField: "Retry-After"))
                 throw ClientError.rateLimited(retryAfter: retryAfter)
+            }
+            if http.statusCode == 401 {
+                onUnauthorized()
             }
             let body = String(data: data, encoding: .utf8) ?? ""
             throw ClientError.http(http.statusCode, body)
