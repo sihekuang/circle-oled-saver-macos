@@ -20,14 +20,14 @@ A bouncing circle screensaver for macOS, designed for OLED displays. Ships as bo
 
 ## Claude Code usage display
 
-One of the built-in content providers shows your current Claude Code subscription quota (`5h` and `7d` utilization percentages plus the absolute token count) inside the circle. Here's exactly how it works, since it touches the keychain:
+One of the built-in content providers shows your current Claude Code subscription quota (`5h` session or `7d` weekly utilization, plus the absolute token count) inside the circle. Here's how it gets the numbers:
 
-- **Source of the number.** The provider calls `https://api.anthropic.com/api/oauth/usage` with the `anthropic-beta: oauth-2025-04-20` header. This is the same endpoint Claude Code's own statusline uses to render the quota bar. The response shape is decoded in [`AnthropicUsageClient.swift`](CircleKit/Sources/CircleKit/Auth/AnthropicUsageClient.swift).
-- **How auth works.** Claude Code stores its OAuth credential blob in the macOS Keychain under service name `Claude Code-credentials`. The provider reads the access token from that entry and includes it as a Bearer token on the API request. Token refresh is handled by Claude Code itself in the background — Circle just reads whatever access token is current at fetch time. See [`ClaudeCodeKeychain.swift`](CircleKit/Sources/CircleKit/Auth/ClaudeCodeKeychain.swift).
-- **What you'll see the first time.** macOS shows the standard keychain access prompt (*"Circle wants to use your confidential information stored in 'Claude Code-credentials' in your keychain"*). Click **Always Allow** to make subsequent reads silent, or **Deny** to keep the feature off.
-- **Where the token goes.** Only into the single HTTPS request to `api.anthropic.com`. The token is never logged, persisted, or sent anywhere else. The feature is gated behind an explicit Settings toggle, so the keychain is not touched until you opt in.
-- **Stability caveat.** `/api/oauth/usage` is a **beta endpoint** that is not part of Anthropic's documented public API surface. Anthropic could change the response shape, tighten rate limits, or remove the endpoint without notice — in which case this provider will silently fall back to "—" until the integration is updated. There is no SLA on this endpoint; it exists for Claude Code's own UI and is being consumed by community tooling at our own risk.
-- **Requires Claude Code.** If Claude Code isn't installed or you're not signed in, the keychain entry won't exist and the provider reports "Claude Code not signed in" without prompting for keychain access.
+- **Source of the number.** Circle runs `claude -p /usage`, the non-interactive form of Claude Code's own `/usage` command, and parses the "Current session" and "Current week" lines. The command makes no model call and uses no quota. See [`ClaudeCLIUsageClient.swift`](CircleKit/Sources/CircleKit/Auth/ClaudeCLIUsageClient.swift) and [`ClaudeCLIUsageParser.swift`](CircleKit/Sources/CircleKit/Auth/ClaudeCLIUsageParser.swift).
+- **No credentials in Circle.** Claude Code reads its own keychain entry and refreshes its own token. Circle never touches the keychain or sees a token, so there's no macOS permission prompt.
+- **Cost.** One run takes about 2–3 seconds of CPU. Circle reuses a reading for 4 minutes and refreshes every 5, and all displays share one reading.
+- **Fallback.** If the CLI can't be run or its output can't be read, Circle uses `~/Library/Application Support/Circle/claude-rate-limits.json` when it exists. A Claude Code [status line](https://code.claude.com/docs/en/statusline) script can write that file from the documented `rate_limits` field. Windows that have already reset are ignored.
+- **Stability caveat.** `/usage` output is meant for people, not programs. If a Claude Code update rewords it, the provider shows "sign in to CC" (or the fallback numbers) until the parser is updated.
+- **Requires Claude Code.** Circle looks for `claude` in `~/.local/bin`, `~/.claude/local`, Homebrew, npm's global bin and `PATH`. If it isn't found, the ball shows "install CC"; if it isn't signed in with a subscription, "sign in to CC".
 
 ---
 

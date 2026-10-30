@@ -1,35 +1,23 @@
 import Foundation
 
 public final class ClaudeUsageProvider: BaseContentProvider {
-    /// 5 minutes. Usage percentages move slowly; cheaper on the endpoint and
-    /// well under any reasonable per-key rate limit.
+    /// 5 minutes. Usage percentages move slowly, and each fresh reading runs
+    /// the `claude` CLI, which costs a couple of seconds of CPU.
     public static let pollInterval: TimeInterval = 300.0
     public override var refreshInterval: TimeInterval { Self.pollInterval }
 
-    /// Fallback delay when the server rate-limits us without a Retry-After.
-    static let defaultRateLimitBackoff: TimeInterval = 30 * 60
+    /// Backoff when Claude Code isn't installed or isn't signed in. Gives
+    /// the user time to fix it without re-running the CLI every tick.
+    static let setupFailureBackoff: TimeInterval = 5 * 60
 
-    /// Backoff after a 401. Claude Code may refresh its access token shortly
-    /// after; no point hammering before that.
-    static let authFailureBackoff: TimeInterval = 5 * 60
-
-    /// Backoff after a transient transport / 5xx error.
+    /// Backoff after the CLI timed out or couldn't be launched.
     static let transientFailureBackoff: TimeInterval = 60
 
     private let clock: () -> Date
     private let mode: ClaudeUsageMode
-    private let usageClient: AnthropicUsageClient
-    /// Resolved at fetch time so flipping
-    /// `SettingsManager.claudeUsageHasKeychainAccess` from Settings takes
-    /// effect on the very next tick (the renderer also rebuilds the rotator
-    /// when this snapshot field changes).
-    private let hasKeychainAccess: () -> Bool
-    /// Called when macOS denies the keychain read. Turns the gate above off
-    /// so we stop re-prompting on every tick until the user re-grants access
-    /// from Settings.
-    private let revokeKeychainAccess: () -> Void
+    private let fetchUsage: () async throws -> AnthropicUsage
     /// Reads Claude Code's local JSONL logs to get an absolute token count
-    /// for the current window. The OAuth endpoint only gives utilization %.
+    /// for the current window. `/usage` only gives utilization %.
     private let tokensSince: (Date) -> Int
 
     /// Earliest time we'll attempt another fetch after a failure. nil means
@@ -38,18 +26,10 @@ public final class ClaudeUsageProvider: BaseContentProvider {
     private var skipUntil: Date?
 
     public override convenience init() {
-        let settings = SettingsManager.shared
         self.init(
             clock: { Date() },
-            mode: settings.claudeUsageMode,
-            usageClient: AnthropicUsageClient(),
-            hasKeychainAccess: { SettingsManager.shared.claudeUsageHasKeychainAccess },
-            revokeKeychainAccess: {
-                // SettingsManager is @Published / drives the UI — mutate on main.
-                DispatchQueue.main.async {
-                    SettingsManager.shared.claudeUsageHasKeychainAccess = false
-                }
-            },
+            mode: SettingsManager.shared.claudeUsageMode,
+            fetchUsage: { try await ClaudeCLIUsageClient.shared.fetchUsage() },
             tokensSince: { JSONLUsageReader.tokensSince($0) }
         )
     }
@@ -57,32 +37,17 @@ public final class ClaudeUsageProvider: BaseContentProvider {
     init(
         clock: @escaping () -> Date = { Date() },
         mode: ClaudeUsageMode = .today,
-        usageClient: AnthropicUsageClient = AnthropicUsageClient(),
-        hasKeychainAccess: @escaping () -> Bool = { true },
-        revokeKeychainAccess: @escaping () -> Void = {},
+        fetchUsage: @escaping () async throws -> AnthropicUsage,
         tokensSince: @escaping (Date) -> Int = { _ in 0 }
     ) {
         self.clock = clock
         self.mode = mode
-        self.usageClient = usageClient
-        self.hasKeychainAccess = hasKeychainAccess
-        self.revokeKeychainAccess = revokeKeychainAccess
+        self.fetchUsage = fetchUsage
         self.tokensSince = tokensSince
         super.init()
     }
 
     public override func fetchData() async {
-        // Hard gate: until the user has explicitly granted keychain access
-        // through Settings, never read the keychain. This is what prevents
-        // the macOS permission prompt from firing in the background at app
-        // launch (e.g., from the menu-bar app, before the user has even
-        // opened Settings).
-        guard hasKeychainAccess() else {
-            cachedData = ContentData(icon: "\u{2728}", text: "Claude\nopen Settings")
-            skipUntil = nil
-            return
-        }
-
         if let skipUntil, skipUntil > clock() {
             // Inside a backoff window — keep whatever the ball is already showing.
             return
@@ -90,32 +55,21 @@ public final class ClaudeUsageProvider: BaseContentProvider {
 
         let usage: AnthropicUsage
         do {
-            usage = try await usageClient.fetchUsage()
-        } catch AnthropicUsageClient.ClientError.keychainAccessDenied {
-            revokeKeychainAccess()
-            cachedData = ContentData(icon: "\u{2728}", text: "Claude\nopen Settings")
-            skipUntil = nil
+            usage = try await fetchUsage()
+        } catch ClaudeCLIUsageClient.ClientError.notInstalled {
+            cachedData = ContentData(icon: "\u{2728}", text: "Claude\ninstall CC")
+            skipUntil = clock().addingTimeInterval(Self.setupFailureBackoff)
             return
-        } catch AnthropicUsageClient.ClientError.missingToken {
+        } catch ClaudeCLIUsageClient.ClientError.notSignedIn {
             cachedData = ContentData(icon: "\u{2728}", text: "Claude\nsign in to CC")
-            skipUntil = nil
-            return
-        } catch AnthropicUsageClient.ClientError.http(let status, _) where status == 401 {
-            cachedData = ContentData(icon: "\u{2728}", text: "Claude\nsign in to CC")
-            skipUntil = clock().addingTimeInterval(Self.authFailureBackoff)
-            return
-        } catch AnthropicUsageClient.ClientError.rateLimited(let retryAfter) {
-            // Keep last-known cachedData visible — don't overwrite with "offline".
-            let delay = retryAfter ?? Self.defaultRateLimitBackoff
-            skipUntil = clock().addingTimeInterval(delay)
+            skipUntil = clock().addingTimeInterval(Self.setupFailureBackoff)
             return
         } catch {
-            // Other transport / 5xx / decoding failures. Show "offline" only if
-            // we have nothing better to display; otherwise keep the last good
-            // reading visible. Either way, back off briefly so we don't burn
-            // the next tick.
+            // Timed out or couldn't launch. Show "unavailable" only if we have
+            // nothing better to display; otherwise keep the last good reading
+            // visible. Either way, back off briefly so we don't burn the next tick.
             if cachedData == nil {
-                cachedData = ContentData(icon: "\u{2728}", text: "Claude\noffline")
+                cachedData = ContentData(icon: "\u{2728}", text: "Claude\nunavailable")
             }
             skipUntil = clock().addingTimeInterval(Self.transientFailureBackoff)
             return

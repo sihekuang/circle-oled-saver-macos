@@ -538,9 +538,7 @@ private struct ContentPageContent: View {
 
 private struct ClaudeUsageSettings: View {
     @ObservedObject var settings: SettingsManager
-    @State private var keychainState: ClaudeCodeKeychainState = .unchecked
-    @State private var testStatus: String = ""
-    @State private var testStatusColor: Color = .secondary
+    @State private var checkState: CheckState = .unchecked
 
     var body: some View {
         Group {
@@ -549,15 +547,9 @@ private struct ClaudeUsageSettings: View {
                 set: { newValue in
                     settings.claudeUsageEnabled = newValue
                     if newValue {
-                        // First read of Claude Code's keychain entry — this is
-                        // the moment macOS shows the permission prompt. Doing
-                        // it here means the prompt fires while the user is in
-                        // Settings (with our explanation visible right above)
-                        // rather than later from the screensaver, out of context.
-                        refreshKeychainState()
+                        runCheck()
                     } else {
-                        keychainState = .unchecked
-                        testStatus = ""
+                        checkState = .unchecked
                     }
                 }
             ))
@@ -580,19 +572,10 @@ private struct ClaudeUsageSettings: View {
             }
             .disabled(!settings.claudeUsageEnabled)
 
-            Text("Shows your Claude subscription quota by calling Anthropic's /api/oauth/usage endpoint with the OAuth token Claude Code stores in your keychain. The token is used only for that API request and never leaves your Mac. Requires Claude Code installed and signed in.")
+            Text("Shows your Claude subscription quota by asking Claude Code for it (the same report as its /usage command). Circle never reads your Claude credentials — Claude Code handles sign-in itself. Requires Claude Code installed and signed in with a Claude subscription.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-
-            HStack(alignment: .top, spacing: 6) {
-                Image(systemName: "lock.shield")
-                    .font(.caption2)
-                Text("macOS will prompt the first time Circle reads Claude Code's keychain entry — that's macOS asking your permission to share data between two apps. Pick \u{201C}Always Allow\u{201D} and Circle won't ask again.")
-                    .font(.caption2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .foregroundColor(.secondary)
 
             HStack(spacing: 4) {
                 Image(systemName: "arrow.clockwise")
@@ -608,24 +591,15 @@ private struct ClaudeUsageSettings: View {
                 Button("Check Connection") {
                     runCheck()
                 }
-                .disabled(!settings.claudeUsageEnabled)
-                if !testStatus.isEmpty {
-                    Text(testStatus)
-                        .font(.caption)
-                        .foregroundColor(testStatusColor)
-                }
+                .disabled(!settings.claudeUsageEnabled || checkState == .checking)
                 Spacer()
             }
 
             DisclosureGroup("Don't have Claude Code?") {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Install Claude Code (the CLI) and sign in with a Claude subscription. The first time Circle reads the keychain, macOS will ask you to allow access — pick \u{201C}Always Allow\u{201D}.")
-                        .font(.caption)
-                    Text("If \u{201C}Allow\u{201D} prompts keep reappearing, that usually means CircleApp's signature changed (e.g. after a rebuild). Re-allow once.")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.top, 4)
+                Text("Install Claude Code (the CLI) and sign in with a Claude subscription by running \u{201C}claude\u{201D} in Terminal once. Circle looks for it in ~/.local/bin, Homebrew and npm's usual locations.")
+                    .font(.caption)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 4)
             }
             .font(.caption)
         }
@@ -634,7 +608,7 @@ private struct ClaudeUsageSettings: View {
     private var refreshIntervalLabel: String {
         let minutes = Int(ClaudeUsageProvider.pollInterval / 60)
         if minutes >= 1 {
-            return "Refreshes every \(minutes) min — kept conservative to avoid Anthropic's rate limit."
+            return "Refreshes every \(minutes) min."
         }
         let seconds = Int(ClaudeUsageProvider.pollInterval)
         return "Refreshes every \(seconds)s."
@@ -642,39 +616,15 @@ private struct ClaudeUsageSettings: View {
 
     @ViewBuilder
     private var statusBanner: some View {
-        switch keychainState {
+        switch checkState {
         case .unchecked:
             EmptyView()
-        case .ok(let expiresIn):
-            statusRow(
-                icon: "checkmark.circle.fill",
-                color: .green,
-                text: "Claude Code signed in. Access token expires in \(expiresIn)."
-            )
-        case .okNoExpiry:
-            statusRow(
-                icon: "checkmark.circle.fill",
-                color: .green,
-                text: "Claude Code signed in."
-            )
-        case .notFound:
-            statusRow(
-                icon: "exclamationmark.circle.fill",
-                color: .orange,
-                text: "Claude Code keychain entry not found. Install Claude Code and sign in."
-            )
-        case .accessDenied:
-            statusRow(
-                icon: "lock.fill",
-                color: .orange,
-                text: "macOS denied keychain access. Tap Check Connection — when prompted, choose \u{201C}Always Allow\u{201D}."
-            )
-        case .error(let message):
-            statusRow(
-                icon: "exclamationmark.triangle.fill",
-                color: .red,
-                text: message
-            )
+        case .checking:
+            statusRow(icon: "hourglass", color: .secondary, text: "Asking Claude Code…")
+        case .ok(let summary):
+            statusRow(icon: "checkmark.circle.fill", color: .green, text: "Connected — \(summary).")
+        case .problem(let message):
+            statusRow(icon: "exclamationmark.circle.fill", color: .orange, text: message)
         }
     }
 
@@ -693,103 +643,36 @@ private struct ClaudeUsageSettings: View {
         )
     }
 
-    private func refreshKeychainState() {
-        let state = readKeychainState()
-        keychainState = state
-        applyAccessFlag(for: state)
-    }
-
     private func runCheck() {
-        // Force a fresh read — this is what triggers the macOS Always-Allow
-        // prompt the first time, so it's a manual user action.
-        testStatus = "Checking…"
-        testStatusColor = .secondary
-        let state = readKeychainState()
-        keychainState = state
-        applyAccessFlag(for: state)
+        checkState = .checking
         Task {
-            await pingUsageEndpoint(state: state)
-        }
-    }
-
-    /// Translates a keychain read result into the persistent access flag
-    /// the screensaver provider checks before reading the keychain itself.
-    /// Successful reads grant access; explicit denial revokes. Other states
-    /// (notFound / unexpected) leave the flag untouched so a transient blip
-    /// doesn't undo a prior approval.
-    private func applyAccessFlag(for state: ClaudeCodeKeychainState) {
-        switch state {
-        case .ok, .okNoExpiry:
-            settings.claudeUsageHasKeychainAccess = true
-        case .accessDenied:
-            settings.claudeUsageHasKeychainAccess = false
-        case .unchecked, .notFound, .error:
-            break
-        }
-    }
-
-    private func pingUsageEndpoint(state: ClaudeCodeKeychainState) async {
-        switch state {
-        case .ok, .okNoExpiry:
-            break
-        default:
-            await MainActor.run {
-                testStatus = ""
+            let state: CheckState
+            do {
+                let usage = try await ClaudeCLIUsageClient.shared.fetchUsage(force: true)
+                let parts = [
+                    usage.fiveHour.map { "\(Int($0.utilization.rounded()))% session" },
+                    usage.sevenDay.map { "\(Int($0.utilization.rounded()))% week" },
+                ].compactMap { $0 }
+                state = .ok(parts.isEmpty ? "no usage data yet" : parts.joined(separator: ", "))
+            } catch ClaudeCLIUsageClient.ClientError.notInstalled {
+                state = .problem("Claude Code not found. Install it, then check again.")
+            } catch ClaudeCLIUsageClient.ClientError.notSignedIn {
+                state = .problem("Claude Code isn't signed in with a Claude subscription. Run \u{201C}claude\u{201D} in Terminal to sign in, then check again.")
+            } catch ClaudeCLIUsageClient.ClientError.timedOut {
+                state = .problem("Claude Code didn't answer in time. Try again.")
+            } catch {
+                state = .problem("Couldn't run Claude Code: \(error.localizedDescription)")
             }
-            return
-        }
-        let client = AnthropicUsageClient()
-        do {
-            let usage = try await client.fetchUsage()
-            let week = usage.sevenDay.map { "\(Int($0.utilization.rounded()))% week" } ?? "no weekly data"
-            await MainActor.run {
-                testStatus = "OK — \(week)"
-                testStatusColor = .green
-            }
-        } catch AnthropicUsageClient.ClientError.http(let code, _) {
-            await MainActor.run {
-                testStatus = "Anthropic returned \(code). Try `claude` in Terminal to refresh sign-in."
-                testStatusColor = .red
-            }
-        } catch {
-            await MainActor.run {
-                testStatus = "Network failed: \(error.localizedDescription)"
-                testStatusColor = .red
-            }
-        }
-    }
-
-    private func readKeychainState() -> ClaudeCodeKeychainState {
-        switch ClaudeCodeKeychain.read() {
-        case .success(let cred):
-            guard let expiresAt = cred.expiresAt else {
-                return .okNoExpiry
-            }
-            let remaining = expiresAt.timeIntervalSinceNow
-            if remaining <= 0 {
-                // Expired but Claude Code should refresh on next CLI invocation.
-                return .error("Access token expired — open Claude Code to refresh, then check again.")
-            }
-            return .ok(expiresIn: ClaudeUsageProvider.formatTimeRemaining(seconds: remaining))
-        case .failure(.notFound):
-            return .notFound
-        case .failure(.accessDenied):
-            return .accessDenied
-        case .failure(.malformed(let why)):
-            return .error("Keychain entry exists but couldn't be parsed: \(why)")
-        case .failure(.unexpectedStatus(let status)):
-            return .error("Keychain returned status \(status).")
+            await MainActor.run { checkState = state }
         }
     }
 }
 
-private enum ClaudeCodeKeychainState: Equatable {
+private enum CheckState: Equatable {
     case unchecked
-    case ok(expiresIn: String)
-    case okNoExpiry
-    case notFound
-    case accessDenied
-    case error(String)
+    case checking
+    case ok(String)
+    case problem(String)
 }
 
 // MARK: - About Page
