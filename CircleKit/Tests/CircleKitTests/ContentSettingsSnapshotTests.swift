@@ -39,14 +39,6 @@ final class ContentSettingsSnapshotTests: XCTestCase {
         XCTAssertNotEqual(a, b)
     }
 
-    func testClaudeUsageHasKeychainAccessChangeChangesSnapshot() {
-        // Granting keychain access should rebuild the rotator so the provider
-        // immediately starts fetching real data instead of "open Settings".
-        let a = makeSnapshot(claudeUsageHasKeychainAccess: false)
-        let b = makeSnapshot(claudeUsageHasKeychainAccess: true)
-        XCTAssertNotEqual(a, b)
-    }
-
     private func makeSnapshot(
         clockEnabled: Bool = true,
         clockFormat24h: Bool = false,
@@ -57,7 +49,6 @@ final class ContentSettingsSnapshotTests: XCTestCase {
         stockRefreshSeconds: Int = 300,
         claudeUsageEnabled: Bool = false,
         claudeUsageMode: ClaudeUsageMode = .today,
-        claudeUsageHasKeychainAccess: Bool = false,
         rotationInterval: Int = 10
     ) -> ContentSettingsSnapshot {
         ContentSettingsSnapshot(
@@ -70,7 +61,6 @@ final class ContentSettingsSnapshotTests: XCTestCase {
             stockRefreshSeconds: stockRefreshSeconds,
             claudeUsageEnabled: claudeUsageEnabled,
             claudeUsageMode: claudeUsageMode,
-            claudeUsageHasKeychainAccess: claudeUsageHasKeychainAccess,
             rotationInterval: rotationInterval
         )
     }
