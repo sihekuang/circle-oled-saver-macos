@@ -170,8 +170,8 @@ final class ClaudeCLIUsageClientTests: XCTestCase {
     func testFailureIsRememberedBriefly() async {
         var runs = 0
         var now = Date(timeIntervalSince1970: 0)
-        let client = ClaudeCLIUsageClient(clock: { now }, locate: { self.cli }, run: { _, _ in
-            runs += 1
+        let client = ClaudeCLIUsageClient(clock: { now }, locate: { self.cli }, run: { _, args in
+            if args == ClaudeCLIUsageClient.arguments { runs += 1 }
             throw ClaudeCLIUsageClient.ClientError.timedOut
         }, fallback: { nil })
         await assertThrows(client, .timedOut)
@@ -182,16 +182,46 @@ final class ClaudeCLIUsageClientTests: XCTestCase {
         XCTAssertEqual(runs, 2)
     }
 
-    func testFallsBackToStatusLineSnapshot() async throws {
-        let snapshot = AnthropicUsage(fiveHour: .init(utilization: 9, resetsAt: nil), sevenDay: nil)
-        let client = ClaudeCLIUsageClient(locate: { nil }, run: { _, _ in "" }, fallback: { snapshot })
+    private let snapshot = AnthropicUsage(fiveHour: .init(utilization: 9, resetsAt: nil), sevenDay: nil)
+
+    /// `/usage` times out; `auth status` prints `authOutput` (or throws when nil).
+    private func timingOutClient(authOutput: String?) -> ClaudeCLIUsageClient {
+        ClaudeCLIUsageClient(locate: { self.cli }, run: { _, args in
+            if args == ClaudeCLIUsageClient.authStatusArguments {
+                guard let authOutput else { throw ClaudeCLIUsageClient.ClientError.timedOut }
+                return authOutput
+            }
+            throw ClaudeCLIUsageClient.ClientError.timedOut
+        }, fallback: { self.snapshot })
+    }
+
+    func testFallsBackToSnapshotWhenCLITimesOutAndLoggedIn() async throws {
+        let client = timingOutClient(authOutput: #"{"loggedIn": true, "authMethod": "claude.ai"}"#)
         let usage = try await client.fetchUsage()
         XCTAssertEqual(usage, snapshot)
     }
 
+    func testNoSnapshotWhenLoggedOut() async {
+        await assertThrows(timingOutClient(authOutput: #"{"loggedIn": false}"#), .timedOut)
+    }
+
+    func testNoSnapshotWhenLoginStatusUnknown() async {
+        await assertThrows(timingOutClient(authOutput: nil), .timedOut)
+        await assertThrows(timingOutClient(authOutput: "not json"), .timedOut)
+    }
+
+    func testSignedOutOutputIgnoresSnapshot() async {
+        let client = ClaudeCLIUsageClient(locate: { self.cli }, run: { _, _ in "Total cost: $0.0000" }, fallback: { self.snapshot })
+        await assertThrows(client, .notSignedIn)
+    }
+
+    func testNotInstalledIgnoresSnapshot() async {
+        let client = ClaudeCLIUsageClient(locate: { nil }, run: { _, _ in "" }, fallback: { self.snapshot })
+        await assertThrows(client, .notInstalled)
+    }
+
     func testCLIReadingWinsOverSnapshot() async throws {
-        let snapshot = AnthropicUsage(fiveHour: .init(utilization: 9, resetsAt: nil), sevenDay: nil)
-        let client = ClaudeCLIUsageClient(locate: { self.cli }, run: { _, _ in self.output }, fallback: { snapshot })
+        let client = ClaudeCLIUsageClient(locate: { self.cli }, run: { _, _ in self.output }, fallback: { self.snapshot })
         let usage = try await client.fetchUsage()
         XCTAssertEqual(usage.fiveHour?.utilization, 6)
     }

@@ -98,15 +98,35 @@ public final class ClaudeCLIUsageClient {
     }
 
     private func load() async -> Result<AnthropicUsage, ClientError> {
-        let result = await loadFromCLI()
-        if case .failure = result, let snapshot = fallback() {
-            return .success(snapshot)
+        guard let executable = locate() else { return .failure(.notInstalled) }
+        let result = await loadFromCLI(executable)
+        // Signed out (or not installed) is a real answer, so the snapshot's
+        // numbers no longer apply. Only fall back when the CLI couldn't
+        // answer at all, and only after confirming the user is still logged
+        // in — the snapshot doesn't change when they log out.
+        switch result {
+        case .failure(.timedOut), .failure(.launchFailed):
+            if await isLoggedIn(executable), let snapshot = fallback() {
+                return .success(snapshot)
+            }
+            return result
+        default:
+            return result
         }
-        return result
     }
 
-    private func loadFromCLI() async -> Result<AnthropicUsage, ClientError> {
-        guard let executable = locate() else { return .failure(.notInstalled) }
+    /// Asks `claude auth status`, which answers locally in about 0.1s.
+    /// Anything other than a clear `"loggedIn": true` counts as logged out.
+    private func isLoggedIn(_ executable: URL) async -> Bool {
+        struct Status: Decodable { let loggedIn: Bool }
+        guard let output = try? await run(executable, Self.authStatusArguments),
+              let status = try? JSONDecoder().decode(Status.self, from: Data(output.utf8)) else {
+            return false
+        }
+        return status.loggedIn
+    }
+
+    private func loadFromCLI(_ executable: URL) async -> Result<AnthropicUsage, ClientError> {
         let output: String
         do {
             output = try await run(executable, Self.arguments)
@@ -131,6 +151,8 @@ public final class ClaudeCLIUsageClient {
         "--strict-mcp-config",
         "--setting-sources", "project",
     ]
+
+    static let authStatusArguments = ["auth", "status", "--json"]
 
     // MARK: - Finding and running the CLI
 
