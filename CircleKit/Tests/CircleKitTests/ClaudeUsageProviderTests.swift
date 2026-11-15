@@ -60,10 +60,23 @@ final class ClaudeUsageProviderTests: XCTestCase {
         XCTAssertEqual(provider.cachedData?.text, "Claude\n48% week\n3h left")
     }
 
+    func testTodayFallsBackToWeekWhenNoSessionLimit() async {
+        // Some plans have no 5-hour limit, so `/usage` prints only the week lines.
+        let usage = AnthropicUsage(
+            fiveHour: nil,
+            sevenDay: Bucket(utilization: 34, resetsAt: isoDate("2026-04-29T00:00:00Z"))
+        )
+        let now = isoDate("2026-04-28T21:00:00Z")
+        let provider = ClaudeUsageProvider(clock: { now }, mode: .today, fetchUsage: { usage })
+        await provider.fetchData()
+        XCTAssertEqual(provider.cachedData?.text, "Claude\n34% week\n3h left")
+    }
+
     func testMissingBucketShowsNoData() async {
         let usage = AnthropicUsage(
             fiveHour: nil,
-            sevenDay: Bucket(utilization: 48, resetsAt: isoDate("2026-04-29T00:00:00Z"))
+            sevenDay: nil,
+            sevenDaySonnet: Bucket(utilization: 5, resetsAt: nil)
         )
         let provider = ClaudeUsageProvider(mode: .today, fetchUsage: { usage })
         await provider.fetchData()

@@ -74,11 +74,13 @@ public final class ClaudeUsageProvider: BaseContentProvider {
 
         let bucket: AnthropicUsage.Bucket?
         let label: String
-        switch mode {
-        case .today:
-            bucket = usage.fiveHour
+        switch (mode, usage.fiveHour) {
+        case (.today, let session?):
+            bucket = session
             label = "session"
-        case .week:
+        default:
+            // Week mode, or a plan with no 5-hour limit (`/usage` then prints
+            // only the week lines) — show the weekly figure.
             bucket = usage.sevenDay
             label = "week"
         }
