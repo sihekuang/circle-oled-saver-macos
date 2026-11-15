@@ -20,12 +20,13 @@ A bouncing circle screensaver for macOS, designed for OLED displays. Ships as bo
 
 ## Claude Code usage display
 
-One of the built-in content providers shows your current Claude Code subscription quota (`5h` session or `7d` weekly utilization, plus the absolute token count) inside the circle. Here's how it gets the numbers:
+One of the built-in content providers shows your current Claude Code subscription quota (`5h` session or `7d` weekly utilization, and time until it resets) inside the circle. Here's how it gets the numbers:
 
-- **Source of the number.** Circle runs `claude -p /usage`, the non-interactive form of Claude Code's own `/usage` command, and parses the "Current session" and "Current week" lines. The command makes no model call and uses no quota. See [`ClaudeCLIUsageClient.swift`](CircleKit/Sources/CircleKit/Auth/ClaudeCLIUsageClient.swift) and [`ClaudeCLIUsageParser.swift`](CircleKit/Sources/CircleKit/Auth/ClaudeCLIUsageParser.swift).
+- **Source of the number.** Circle runs `claude -p /usage`, the non-interactive form of Claude Code's own `/usage` command, and parses the "Current session" and "Current week" lines. Plans without a 5-hour limit print no session line; Session mode then shows the weekly figure. The command makes no model call and uses no quota. See [`ClaudeCLIUsageClient.swift`](CircleKit/Sources/CircleKit/Auth/ClaudeCLIUsageClient.swift) and [`ClaudeCLIUsageParser.swift`](CircleKit/Sources/CircleKit/Auth/ClaudeCLIUsageParser.swift).
 - **No credentials in Circle.** Claude Code reads its own keychain entry and refreshes its own token. Circle never touches the keychain or sees a token, so there's no macOS permission prompt.
 - **Cost.** One run takes about 2–3 seconds of CPU. Circle reuses a reading for 4 minutes and refreshes every 5, and all displays share one reading.
 - **Fallback.** If the CLI can't be run or its output can't be read, Circle uses `~/Library/Application Support/Circle/claude-rate-limits.json` when it exists. A Claude Code [status line](https://code.claude.com/docs/en/statusline) script can write that file from the documented `rate_limits` field. Windows that have already reset are ignored.
+- **No token count.** `/usage` reports percentages only, with no account-wide token total. Claude Code's local logs only cover the Mac they're on, so Circle doesn't show a token count.
 - **Stability caveat.** `/usage` output is meant for people, not programs. If a Claude Code update rewords it, the provider shows "sign in to CC" (or the fallback numbers) until the parser is updated.
 - **Requires Claude Code.** Circle looks for `claude` in `~/.local/bin`, `~/.claude/local`, Homebrew, npm's global bin and `PATH`. If it isn't found, the ball shows "install CC"; if it isn't signed in with a subscription, "sign in to CC".
 
